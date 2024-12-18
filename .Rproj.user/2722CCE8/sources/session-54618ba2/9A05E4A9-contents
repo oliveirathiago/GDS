@@ -1,0 +1,1738 @@
+library(tidyverse)
+library(haven)
+library(ltm)
+library(MASS)
+library(broom)
+library(mfx)
+library(texreg)
+library(sjPlot)
+library(officer)
+library(broom)
+library(flextable)
+
+data_raw <- read_spss('data/gds2022_policy_45094.sav')
+
+data <- 
+  data_raw %>%
+  mutate(across(c(scen1supp, scen2supp, scen3supp, scen4supp, scen5supp, scen6supp), ~as_factor(.))) %>%
+  mutate(across(c(scen1crime:scen1trust, scen2crime:scen2trust, scen3crime:scen3trust, scen4crime:scen4trust, scen5crime:scen5trust, scen6crime:scen6trust), 
+                ~ case_when(. == 4 | . == 5 ~ T, T ~ F))) %>%
+  mutate(male = gender == 1,
+         white = ethnicity == 1,
+         age = case_when(age > 85 ~ NA_real_, TRUE ~ age)) %>%
+  mutate(age = as.numeric(age)) %>%
+  filter(ncountry == 10 | ncountry == 13 | ncountry == 14 | ncountry == 21 | ncountry == 25 | ncountry == 38 | ncountry == 47 | ncountry == 58 | ncountry == 72 | ncountry == 73 | ncountry == 80
+         | ncountry == 98 | ncountry == 104 | ncountry == 106 | ncountry == 140 | ncountry == 155 | ncountry == 173 | ncountry == 174 | ncountry == 201 | ncountry == 206 | ncountry == 208
+         | ncountry == 228 | ncountry == 227) %>%
+  mutate(country = as_factor(scountry))
+
+###################
+## ordinal logit models
+
+## aproach would reduce crime
+m_scen1_crime <- polr(scen1supp ~ scen1crime + age + male + country, data = data, method = 'logistic')
+m_scen2_crime <- polr(scen2supp ~ scen2crime + age + male + country, data = data, method = 'logistic')
+m_scen3_crime <- polr(scen3supp ~ scen3crime + age + male + country, data = data, method = 'logistic')
+m_scen4_crime <- polr(scen4supp ~ scen4crime + age + male + country, data = data, method = 'logistic')
+m_scen5_crime <- polr(scen5supp ~ scen5crime + age + male + country, data = data, method = 'logistic')
+m_scen6_crime <- polr(scen6supp ~ scen6crime + age + male + country, data = data, method = 'logistic')
+
+## approach would encourage drug use
+m_scen1_encour <- polr(scen1supp ~ scen1encour + age + male + country, data = data, method = 'logistic')
+m_scen2_encour <- polr(scen2supp ~ scen2encour + age + male + country, data = data, method = 'logistic')
+m_scen3_encour <- polr(scen3supp ~ scen3encour + age + male + country, data = data, method = 'logistic')
+m_scen4_encour <- polr(scen4supp ~ scen4encour + age + male + country, data = data, method = 'logistic')
+m_scen5_encour <- polr(scen5supp ~ scen5encour + age + male + country, data = data, method = 'logistic')
+m_scen6_encour <- polr(scen6supp ~ scen6encour + age + male + country, data = data, method = 'logistic')
+
+## approach would restrict freedom
+m_scen1_free <- polr(scen1supp ~ scen1free + age + male + country, data = data, method = 'logistic')
+m_scen2_free <- polr(scen2supp ~ scen2free + age + male + country, data = data, method = 'logistic')
+m_scen3_free <- polr(scen3supp ~ scen3free + age + male + country, data = data, method = 'logistic')
+m_scen4_free <- polr(scen4supp ~ scen4free + age + male + country, data = data, method = 'logistic')
+m_scen5_free <- polr(scen5supp ~ scen5free + age + male + country, data = data, method = 'logistic')
+m_scen6_free <- polr(scen6supp ~ scen6free + age + male + country, data = data, method = 'logistic')
+
+## approach would improve health and wellbeing
+m_scen1_health <- polr(scen1supp ~ scen1health + age + male + country, data = data, method = 'logistic')
+m_scen2_health <- polr(scen2supp ~ scen2health + age + male + country, data = data, method = 'logistic')
+m_scen3_health <- polr(scen3supp ~ scen3health + age + male + country, data = data, method = 'logistic')
+m_scen4_health <- polr(scen4supp ~ scen4health + age + male + country, data = data, method = 'logistic')
+m_scen5_health <- polr(scen5supp ~ scen5health + age + male + country, data = data, method = 'logistic')
+m_scen6_health <- polr(scen6supp ~ scen6health + age + male + country, data = data, method = 'logistic')
+
+## approach would hurt the most vulnerable
+m_scen1_vulner <- polr(scen1supp ~ scen1vulner + age + male + country, data = data, method = 'logistic')
+m_scen2_vulner <- polr(scen2supp ~ scen2vulner + age + male + country, data = data, method = 'logistic')
+m_scen3_vulner <- polr(scen3supp ~ scen3vulner + age + male + country, data = data, method = 'logistic')
+m_scen4_vulner <- polr(scen4supp ~ scen4vulner + age + male + country, data = data, method = 'logistic')
+m_scen5_vulner <- polr(scen5supp ~ scen5vulner + age + male + country, data = data, method = 'logistic')
+m_scen6_vulner <- polr(scen6supp ~ scen6vulner + age + male + country, data = data, method = 'logistic')
+
+## would boost the economy
+m_scen1_econ <- polr(scen1supp ~ scen1econ + age + male + country, data = data, method = 'logistic')
+m_scen2_econ <- polr(scen2supp ~ scen2econ + age + male + country, data = data, method = 'logistic')
+m_scen3_econ <- polr(scen3supp ~ scen3econ + age + male + country, data = data, method = 'logistic')
+m_scen4_econ <- polr(scen4supp ~ scen4econ + age + male + country, data = data, method = 'logistic')
+m_scen5_econ <- polr(scen5supp ~ scen5econ + age + male + country, data = data, method = 'logistic')
+m_scen6_econ <- polr(scen6supp ~ scen6econ + age + male + country, data = data, method = 'logistic')
+
+## would improve trust in govt
+m_scen1_trust <- polr(scen1supp ~ scen1trust + age + male + country, data = data, method = 'logistic')
+m_scen2_trust <- polr(scen2supp ~ scen2trust + age + male + country, data = data, method = 'logistic')
+m_scen3_trust <- polr(scen3supp ~ scen3trust + age + male + country, data = data, method = 'logistic')
+m_scen4_trust <- polr(scen4supp ~ scen4trust + age + male + country, data = data, method = 'logistic')
+m_scen5_trust <- polr(scen5supp ~ scen5trust + age + male + country, data = data, method = 'logistic')
+m_scen6_trust <- polr(scen6supp ~ scen6trust + age + male + country, data = data, method = 'logistic')
+
+models <- list(m_scen1_crime, m_scen2_crime, m_scen3_crime, m_scen4_crime, m_scen5_crime, m_scen6_crime,
+               m_scen1_encour, m_scen2_encour, m_scen3_encour, m_scen4_encour, m_scen5_encour, m_scen6_encour,
+               m_scen1_free, m_scen2_free, m_scen3_free, m_scen4_free, m_scen5_free, m_scen6_free,
+               m_scen1_health, m_scen2_health, m_scen3_health, m_scen4_health, m_scen5_health, m_scen6_health,
+               m_scen1_vulner, m_scen2_vulner, m_scen3_vulner, m_scen4_vulner, m_scen5_vulner, m_scen6_vulner,
+               m_scen1_econ, m_scen2_econ, m_scen3_econ, m_scen4_econ, m_scen5_econ, m_scen6_econ,
+               m_scen1_trust, m_scen2_trust, m_scen3_trust, m_scen4_trust, m_scen5_trust, m_scen6_trust)
+
+# Function to extract required details from a model
+extract_coefficients <- function(model) {
+  coef_summary <- summary(model)$coefficients
+  tibble(
+    Coefficient = coef_summary[1, 1],
+    Std_Error = coef_summary[1, 2],
+    t_value = coef_summary[1, 3]
+  )
+}
+
+# Apply the function to each model in the list and bind rows
+coefficients_data <- lapply(models, extract_coefficients) %>%
+  bind_rows()
+
+# Add `scen` and `crime` columns
+dataplot_all <- coefficients_data %>%
+  mutate(scen = rep(c('Scenario 1', 'Scenario 2', 'Scenario 3', 'Scenario 4', 'Scenario 5', 'Scenario 6'), 7),
+         var = rep(c('crime', 'encour', 'free', 'health', 'vulner', 'econ', 'trust'), each = 6),
+         ci.lower = Coefficient - 1.96 * Std_Error,
+         ci.upper = Coefficient + 1.96 * Std_Error) %>%
+  mutate(significance = case_when(ci.lower > 0 & ci.upper > 0 ~ 'significant',
+                                  ci.lower < 0 & ci.upper < 0 ~ 'significant',
+                                  TRUE ~ 'non significant'))
+
+###############################################################
+
+data <-
+  data_raw %>%
+  mutate(scen1_immoral = case_when(scen1immoral == 4 | scen1immoral == 5 ~ "Immoral",
+                                   scen1immoral == 3 ~ "Neutral",
+                                   scen1immoral == 1 | scen1immoral == 2 ~ "Moral"),
+         scen2_immoral = case_when(scen2immoral == 4 | scen2immoral == 5 ~ "Immoral",
+                                   scen2immoral == 3 ~ "Neutral",
+                                   scen2immoral == 1 | scen2immoral == 2 ~ "Moral"),
+         scen3_immoral = case_when(scen3immoral == 4 | scen3immoral == 5 ~ "Immoral",
+                                   scen3immoral == 3 ~ "Neutral",
+                                   scen3immoral == 1 | scen3immoral == 2 ~ "Moral"),
+         scen4_immoral = case_when(scen4immoral == 4 | scen4immoral == 5 ~ "Immoral",
+                                   scen4immoral == 3 ~ "Neutral",
+                                   scen4immoral == 1 | scen4immoral == 2 ~ "Moral"),
+         scen5_immoral = case_when(scen5immoral == 4 | scen5immoral == 5 ~ "Immoral",
+                                   scen5immoral == 3 ~ "Neutral",
+                                   scen5immoral == 1 | scen5immoral == 2 ~ "Moral"),
+         scen6_immoral = case_when(scen6immoral == 4 | scen6immoral == 5 ~ "Immoral",
+                                   scen6immoral == 3 ~ "Neutral",
+                                   scen6immoral == 1 | scen6immoral == 2 ~ "Moral")) %>%
+  mutate(across(c(scen1supp, scen2supp, scen3supp, scen4supp, scen5supp, scen6supp), ~as_factor(.))) %>%
+  mutate(across(c(scen1crime:scen1trust, scen2crime:scen2trust, scen3crime:scen3trust, scen4crime:scen4trust, scen5crime:scen5trust, scen6crime:scen6trust), 
+                ~ case_when(. == 4 | . == 5 ~ T, T ~ F))) %>%
+  mutate(male = gender == 1,
+         white = ethnicity == 1,
+         age = case_when(age > 85 ~ NA_real_, TRUE ~ age)) %>%
+  mutate(age = as.numeric(age)) %>%
+  filter(ncountry == 10 | ncountry == 13 | ncountry == 14 | ncountry == 21 | ncountry == 25 | ncountry == 38 | ncountry == 47 | ncountry == 58 | ncountry == 72 | ncountry == 73 | ncountry == 80
+         | ncountry == 98 | ncountry == 104 | ncountry == 106 | ncountry == 140 | ncountry == 155 | ncountry == 173 | ncountry == 174 | ncountry == 201 | ncountry == 206 | ncountry == 208
+         | ncountry == 228 | ncountry == 227) %>%
+  mutate(country = as_factor(scountry))
+
+# change ref groups
+data_immoral <- data %>% mutate(across(c(scen1_immoral:scen6_immoral), ~factor(., levels = c('Immoral', 'Neutral', 'Moral'))))
+data_neutral <- data %>% mutate(across(c(scen1_immoral:scen6_immoral), ~factor(., levels = c('Neutral', 'Immoral', 'Moral'))))
+data_moral <- data %>% mutate(across(c(scen1_immoral:scen6_immoral), ~factor(., levels = c('Moral', 'Immoral', 'Neutral'))))
+
+# ref: immoral
+## aproach would reduce crime
+m_scen1_immoral_crime <- polr(scen1supp ~ scen1crime * scen1_immoral + age + male + country, data =data_immoral, method = 'logistic')
+m_scen2_immoral_crime <- polr(scen2supp ~ scen2crime * scen2_immoral + age + male + country, data =data_immoral, method = 'logistic')
+m_scen3_immoral_crime <- polr(scen3supp ~ scen3crime * scen3_immoral + age + male + country, data =data_immoral, method = 'logistic')
+m_scen4_immoral_crime <- polr(scen4supp ~ scen4crime * scen4_immoral + age + male + country, data =data_immoral, method = 'logistic')
+m_scen5_immoral_crime <- polr(scen5supp ~ scen5crime * scen5_immoral + age + male + country, data =data_immoral, method = 'logistic')
+m_scen6_immoral_crime <- polr(scen6supp ~ scen6crime * scen6_immoral + age + male + country, data =data_immoral, method = 'logistic')
+
+## approach would encourage drug use
+m_scen1_immoral_encour <- polr(scen1supp ~ scen1encour * scen1_immoral + age + male + country, data =data_immoral, method = 'logistic')
+m_scen2_immoral_encour <- polr(scen2supp ~ scen2encour * scen2_immoral + age + male + country, data =data_immoral, method = 'logistic')
+m_scen3_immoral_encour <- polr(scen3supp ~ scen3encour * scen3_immoral + age + male + country, data =data_immoral, method = 'logistic')
+m_scen4_immoral_encour <- polr(scen4supp ~ scen4encour * scen4_immoral + age + male + country, data =data_immoral, method = 'logistic')
+m_scen5_immoral_encour <- polr(scen5supp ~ scen5encour * scen5_immoral + age + male + country, data =data_immoral, method = 'logistic')
+m_scen6_immoral_encour <- polr(scen6supp ~ scen6encour * scen6_immoral + age + male + country, data =data_immoral, method = 'logistic')
+
+## approach would restrict freedom
+m_scen1_immoral_free <- polr(scen1supp ~ scen1free * scen1_immoral + age + male + country, data =data_immoral, method = 'logistic')
+m_scen2_immoral_free <- polr(scen2supp ~ scen2free * scen2_immoral + age + male + country, data =data_immoral, method = 'logistic')
+m_scen3_immoral_free <- polr(scen3supp ~ scen3free * scen3_immoral + age + male + country, data =data_immoral, method = 'logistic')
+m_scen4_immoral_free <- polr(scen4supp ~ scen4free * scen4_immoral + age + male + country, data =data_immoral, method = 'logistic')
+m_scen5_immoral_free <- polr(scen5supp ~ scen5free * scen5_immoral + age + male + country, data =data_immoral, method = 'logistic')
+m_scen6_immoral_free <- polr(scen6supp ~ scen6free * scen6_immoral + age + male + country, data =data_immoral, method = 'logistic')
+
+## approach would improve health and wellbeing
+m_scen1_immoral_health <- polr(scen1supp ~ scen1health * scen1_immoral + age + male + country, data =data_immoral, method = 'logistic')
+m_scen2_immoral_health <- polr(scen2supp ~ scen2health * scen2_immoral + age + male + country, data =data_immoral, method = 'logistic')
+m_scen3_immoral_health <- polr(scen3supp ~ scen3health * scen3_immoral + age + male + country, data =data_immoral, method = 'logistic')
+m_scen4_immoral_health <- polr(scen4supp ~ scen4health * scen4_immoral + age + male + country, data =data_immoral, method = 'logistic')
+m_scen5_immoral_health <- polr(scen5supp ~ scen5health * scen5_immoral + age + male + country, data =data_immoral, method = 'logistic')
+m_scen6_immoral_health <- polr(scen6supp ~ scen6health * scen6_immoral + age + male + country, data =data_immoral, method = 'logistic')
+
+## approach would hurt the most vulnerable
+m_scen1_immoral_vulner <- polr(scen1supp ~ scen1vulner * scen1_immoral + age + male + country, data =data_immoral, method = 'logistic')
+m_scen2_immoral_vulner <- polr(scen2supp ~ scen2vulner * scen2_immoral + age + male + country, data =data_immoral, method = 'logistic')
+m_scen3_immoral_vulner <- polr(scen3supp ~ scen3vulner * scen3_immoral + age + male + country, data =data_immoral, method = 'logistic')
+m_scen4_immoral_vulner <- polr(scen4supp ~ scen4vulner * scen4_immoral + age + male + country, data =data_immoral, method = 'logistic')
+m_scen5_immoral_vulner <- polr(scen5supp ~ scen5vulner * scen5_immoral + age + male + country, data =data_immoral, method = 'logistic')
+m_scen6_immoral_vulner <- polr(scen6supp ~ scen6vulner * scen6_immoral + age + male + country, data =data_immoral, method = 'logistic')
+
+## would boost the economy
+m_scen1_immoral_econ <- polr(scen1supp ~ scen1econ * scen1_immoral + age + male + country, data =data_immoral, method = 'logistic')
+m_scen2_immoral_econ <- polr(scen2supp ~ scen2econ * scen2_immoral + age + male + country, data =data_immoral, method = 'logistic')
+m_scen3_immoral_econ <- polr(scen3supp ~ scen3econ * scen3_immoral + age + male + country, data =data_immoral, method = 'logistic')
+m_scen4_immoral_econ <- polr(scen4supp ~ scen4econ * scen4_immoral + age + male + country, data =data_immoral, method = 'logistic')
+m_scen5_immoral_econ <- polr(scen5supp ~ scen5econ * scen5_immoral + age + male + country, data =data_immoral, method = 'logistic')
+m_scen6_immoral_econ <- polr(scen6supp ~ scen6econ * scen6_immoral + age + male + country, data =data_immoral, method = 'logistic')
+
+## would improve trust in govt
+m_scen1_immoral_trust <- polr(scen1supp ~ scen1trust * scen1_immoral + age + male + country, data =data_immoral, method = 'logistic')
+m_scen2_immoral_trust <- polr(scen2supp ~ scen2trust * scen2_immoral + age + male + country, data =data_immoral, method = 'logistic')
+m_scen3_immoral_trust <- polr(scen3supp ~ scen3trust * scen3_immoral + age + male + country, data =data_immoral, method = 'logistic')
+m_scen4_immoral_trust <- polr(scen4supp ~ scen4trust * scen4_immoral + age + male + country, data =data_immoral, method = 'logistic')
+m_scen5_immoral_trust <- polr(scen5supp ~ scen5trust * scen5_immoral + age + male + country, data =data_immoral, method = 'logistic')
+m_scen6_immoral_trust <- polr(scen6supp ~ scen6trust * scen6_immoral + age + male + country, data =data_immoral, method = 'logistic')
+
+models_immoral <- list(m_scen1_immoral_crime, m_scen2_immoral_crime, m_scen3_immoral_crime, m_scen4_immoral_crime, m_scen5_immoral_crime, m_scen6_immoral_crime,
+               m_scen1_immoral_encour, m_scen2_immoral_encour, m_scen3_immoral_encour, m_scen4_immoral_encour, m_scen5_immoral_encour, m_scen6_immoral_encour,
+               m_scen1_immoral_free, m_scen2_immoral_free, m_scen3_immoral_free, m_scen4_immoral_free, m_scen5_immoral_free, m_scen6_immoral_free,
+               m_scen1_immoral_health, m_scen2_immoral_health, m_scen3_immoral_health, m_scen4_immoral_health, m_scen5_immoral_health, m_scen6_immoral_health,
+               m_scen1_immoral_vulner, m_scen2_immoral_vulner, m_scen3_immoral_vulner, m_scen4_immoral_vulner, m_scen5_immoral_vulner, m_scen6_immoral_vulner,
+               m_scen1_immoral_econ, m_scen2_immoral_econ, m_scen3_immoral_econ, m_scen4_immoral_econ, m_scen5_immoral_econ, m_scen6_immoral_econ,
+               m_scen1_immoral_trust, m_scen2_immoral_trust, m_scen3_immoral_trust, m_scen4_immoral_trust, m_scen5_immoral_trust, m_scen6_immoral_trust)
+
+# Apply the function to each model in the list and bind rows
+coefficients_data_immoral <- lapply(models_immoral, extract_coefficients) %>%
+  bind_rows() %>%
+  mutate(mor = "Immoral",
+         scen = rep(c('Scenario 1', 'Scenario 2', 'Scenario 3', 'Scenario 4', 'Scenario 5', 'Scenario 6'), 7),
+         var = rep(c('crime', 'encour', 'free', 'health', 'vulner', 'econ', 'trust'), each = 6),
+         ci.lower = Coefficient - 1.96 * Std_Error,
+         ci.upper = Coefficient + 1.96 * Std_Error) %>%
+  mutate(significance = case_when(ci.lower > 0 & ci.upper > 0 ~ 'significant',
+                                  ci.lower < 0 & ci.upper < 0 ~ 'significant',
+                                  TRUE ~ 'non significant'))
+
+m_scen1_neutral_crime <- polr(scen1supp ~ scen1crime * scen1_immoral + age + male + country, data =data_neutral, method = 'logistic')
+m_scen2_neutral_crime <- polr(scen2supp ~ scen2crime * scen2_immoral + age + male + country, data =data_neutral, method = 'logistic')
+m_scen3_neutral_crime <- polr(scen3supp ~ scen3crime * scen3_immoral + age + male + country, data =data_neutral, method = 'logistic')
+m_scen4_neutral_crime <- polr(scen4supp ~ scen4crime * scen4_immoral + age + male + country, data =data_neutral, method = 'logistic')
+m_scen5_neutral_crime <- polr(scen5supp ~ scen5crime * scen5_immoral + age + male + country, data =data_neutral, method = 'logistic')
+m_scen6_neutral_crime <- polr(scen6supp ~ scen6crime * scen6_immoral + age + male + country, data =data_neutral, method = 'logistic')
+
+## approach would encourage drug use
+m_scen1_neutral_encour <- polr(scen1supp ~ scen1encour * scen1_immoral + age + male + country, data =data_neutral, method = 'logistic')
+m_scen2_neutral_encour <- polr(scen2supp ~ scen2encour * scen2_immoral + age + male + country, data =data_neutral, method = 'logistic')
+m_scen3_neutral_encour <- polr(scen3supp ~ scen3encour * scen3_immoral + age + male + country, data =data_neutral, method = 'logistic')
+m_scen4_neutral_encour <- polr(scen4supp ~ scen4encour * scen4_immoral + age + male + country, data =data_neutral, method = 'logistic')
+m_scen5_neutral_encour <- polr(scen5supp ~ scen5encour * scen5_immoral + age + male + country, data =data_neutral, method = 'logistic')
+m_scen6_neutral_encour <- polr(scen6supp ~ scen6encour * scen6_immoral + age + male + country, data =data_neutral, method = 'logistic')
+
+## approach would restrict freedom
+m_scen1_neutral_free <- polr(scen1supp ~ scen1free * scen1_immoral + age + male + country, data =data_neutral, method = 'logistic')
+m_scen2_neutral_free <- polr(scen2supp ~ scen2free * scen2_immoral + age + male + country, data =data_neutral, method = 'logistic')
+m_scen3_neutral_free <- polr(scen3supp ~ scen3free * scen3_immoral + age + male + country, data =data_neutral, method = 'logistic')
+m_scen4_neutral_free <- polr(scen4supp ~ scen4free * scen4_immoral + age + male + country, data =data_neutral, method = 'logistic')
+m_scen5_neutral_free <- polr(scen5supp ~ scen5free * scen5_immoral + age + male + country, data =data_neutral, method = 'logistic')
+m_scen6_neutral_free <- polr(scen6supp ~ scen6free * scen6_immoral + age + male + country, data =data_neutral, method = 'logistic')
+
+## approach would improve health and wellbeing
+m_scen1_neutral_health <- polr(scen1supp ~ scen1health * scen1_immoral + age + male + country, data =data_neutral, method = 'logistic')
+m_scen2_neutral_health <- polr(scen2supp ~ scen2health * scen2_immoral + age + male + country, data =data_neutral, method = 'logistic')
+m_scen3_neutral_health <- polr(scen3supp ~ scen3health * scen3_immoral + age + male + country, data =data_neutral, method = 'logistic')
+m_scen4_neutral_health <- polr(scen4supp ~ scen4health * scen4_immoral + age + male + country, data =data_neutral, method = 'logistic')
+m_scen5_neutral_health <- polr(scen5supp ~ scen5health * scen5_immoral + age + male + country, data =data_neutral, method = 'logistic')
+m_scen6_neutral_health <- polr(scen6supp ~ scen6health * scen6_immoral + age + male + country, data =data_neutral, method = 'logistic')
+
+## approach would hurt the most vulnerable
+m_scen1_neutral_vulner <- polr(scen1supp ~ scen1vulner * scen1_immoral + age + male + country, data =data_neutral, method = 'logistic')
+m_scen2_neutral_vulner <- polr(scen2supp ~ scen2vulner * scen2_immoral + age + male + country, data =data_neutral, method = 'logistic')
+m_scen3_neutral_vulner <- polr(scen3supp ~ scen3vulner * scen3_immoral + age + male + country, data =data_neutral, method = 'logistic')
+m_scen4_neutral_vulner <- polr(scen4supp ~ scen4vulner * scen4_immoral + age + male + country, data =data_neutral, method = 'logistic')
+m_scen5_neutral_vulner <- polr(scen5supp ~ scen5vulner * scen5_immoral + age + male + country, data =data_neutral, method = 'logistic')
+m_scen6_neutral_vulner <- polr(scen6supp ~ scen6vulner * scen6_immoral + age + male + country, data =data_neutral, method = 'logistic')
+
+## would boost the economy
+m_scen1_neutral_econ <- polr(scen1supp ~ scen1econ * scen1_immoral + age + male + country, data =data_neutral, method = 'logistic')
+m_scen2_neutral_econ <- polr(scen2supp ~ scen2econ * scen2_immoral + age + male + country, data =data_neutral, method = 'logistic')
+m_scen3_neutral_econ <- polr(scen3supp ~ scen3econ * scen3_immoral + age + male + country, data =data_neutral, method = 'logistic')
+m_scen4_neutral_econ <- polr(scen4supp ~ scen4econ * scen4_immoral + age + male + country, data =data_neutral, method = 'logistic')
+m_scen5_neutral_econ <- polr(scen5supp ~ scen5econ * scen5_immoral + age + male + country, data =data_neutral, method = 'logistic')
+m_scen6_neutral_econ <- polr(scen6supp ~ scen6econ * scen6_immoral + age + male + country, data =data_neutral, method = 'logistic')
+
+## would improve trust in govt
+m_scen1_neutral_trust <- polr(scen1supp ~ scen1trust * scen1_immoral + age + male + country, data =data_neutral, method = 'logistic')
+m_scen2_neutral_trust <- polr(scen2supp ~ scen2trust * scen2_immoral + age + male + country, data =data_neutral, method = 'logistic')
+m_scen3_neutral_trust <- polr(scen3supp ~ scen3trust * scen3_immoral + age + male + country, data =data_neutral, method = 'logistic')
+m_scen4_neutral_trust <- polr(scen4supp ~ scen4trust * scen4_immoral + age + male + country, data =data_neutral, method = 'logistic')
+m_scen5_neutral_trust <- polr(scen5supp ~ scen5trust * scen5_immoral + age + male + country, data =data_neutral, method = 'logistic')
+m_scen6_neutral_trust <- polr(scen6supp ~ scen6trust * scen6_immoral + age + male + country, data =data_neutral, method = 'logistic')
+
+models_neutral <- list(m_scen1_neutral_crime, m_scen2_neutral_crime, m_scen3_neutral_crime, m_scen4_neutral_crime, m_scen5_neutral_crime, m_scen6_neutral_crime,
+                       m_scen1_neutral_encour, m_scen2_neutral_encour, m_scen3_neutral_encour, m_scen4_neutral_encour, m_scen5_neutral_encour, m_scen6_neutral_encour,
+                       m_scen1_neutral_free, m_scen2_neutral_free, m_scen3_neutral_free, m_scen4_neutral_free, m_scen5_neutral_free, m_scen6_neutral_free,
+                       m_scen1_neutral_health, m_scen2_neutral_health, m_scen3_neutral_health, m_scen4_neutral_health, m_scen5_neutral_health, m_scen6_neutral_health,
+                       m_scen1_neutral_vulner, m_scen2_neutral_vulner, m_scen3_neutral_vulner, m_scen4_neutral_vulner, m_scen5_neutral_vulner, m_scen6_neutral_vulner,
+                       m_scen1_neutral_econ, m_scen2_neutral_econ, m_scen3_neutral_econ, m_scen4_neutral_econ, m_scen5_neutral_econ, m_scen6_neutral_econ,
+                       m_scen1_neutral_trust, m_scen2_neutral_trust, m_scen3_neutral_trust, m_scen4_neutral_trust, m_scen5_neutral_trust, m_scen6_neutral_trust)
+
+# Apply the function to each model in the list and bind rows
+coefficients_data_neutral <- lapply(models_neutral, extract_coefficients) %>%
+  bind_rows() %>%
+  mutate(mor = "Neutral",
+         scen = rep(c('Scenario 1', 'Scenario 2', 'Scenario 3', 'Scenario 4', 'Scenario 5', 'Scenario 6'), 7),
+         var = rep(c('crime', 'encour', 'free', 'health', 'vulner', 'econ', 'trust'), each = 6),
+         ci.lower = Coefficient - 1.96 * Std_Error,
+         ci.upper = Coefficient + 1.96 * Std_Error) %>%
+  mutate(significance = case_when(ci.lower > 0 & ci.upper > 0 ~ 'significant',
+                                  ci.lower < 0 & ci.upper < 0 ~ 'significant',
+                                  TRUE ~ 'non significant'))
+
+# Assign names to models_neutral based on their variable names
+names(models_neutral) <- c(
+  "m_scen1_neutral_crime", "m_scen2_neutral_crime", "m_scen3_neutral_crime", "m_scen4_neutral_crime", 
+  "m_scen5_neutral_crime", "m_scen6_neutral_crime",
+  "m_scen1_neutral_encour", "m_scen2_neutral_encour", "m_scen3_neutral_encour", "m_scen4_neutral_encour", 
+  "m_scen5_neutral_encour", "m_scen6_neutral_encour",
+  "m_scen1_neutral_free", "m_scen2_neutral_free", "m_scen3_neutral_free", "m_scen4_neutral_free", 
+  "m_scen5_neutral_free", "m_scen6_neutral_free",
+  "m_scen1_neutral_health", "m_scen2_neutral_health", "m_scen3_neutral_health", "m_scen4_neutral_health", 
+  "m_scen5_neutral_health", "m_scen6_neutral_health",
+  "m_scen1_neutral_vulner", "m_scen2_neutral_vulner", "m_scen3_neutral_vulner", "m_scen4_neutral_vulner", 
+  "m_scen5_neutral_vulner", "m_scen6_neutral_vulner",
+  "m_scen1_neutral_econ", "m_scen2_neutral_econ", "m_scen3_neutral_econ", "m_scen4_neutral_econ", 
+  "m_scen5_neutral_econ", "m_scen6_neutral_econ",
+  "m_scen1_neutral_trust", "m_scen2_neutral_trust", "m_scen3_neutral_trust", "m_scen4_neutral_trust", 
+  "m_scen5_neutral_trust", "m_scen6_neutral_trust"
+)
+
+
+
+# Specify your output folder
+output_folder <- "tables - models"
+
+clean_model_results <- function(model) {
+  # Tidy the model
+  results <- broom::tidy(model)
+  
+  # Filter only 'coefficient' type
+  results <- results[results$coef.type == 'coefficient', ]
+  
+  # Remove column 'coef.type
+  results <- results[, 1:4]
+  
+  # Regular expressions to omit control variables
+  omit_pattern <- paste0("^(", paste(c("age", "male", "country"), collapse = "|"), ")(TRUE|.*)?$")
+  
+  # Filter out unwanted terms
+  results <- results[!grepl(omit_pattern, results$term), ]
+  
+  return(results)
+}
+
+models_morality_scen1 <- list(crime = m_scen1_neutral_crime, econ = m_scen1_neutral_econ, encour = m_scen1_neutral_encour, free = m_scen1_neutral_free, 
+                              health = m_scen1_neutral_health, trust = m_scen1_neutral_trust, vulner = m_scen1_neutral_vulner) %>%
+  lapply(clean_model_results) %>%
+  imap_dfr(~mutate(.x, model = .y)) %>%
+  mutate(scenario = 'scenario 1') %>%
+  mutate(significance = case_when(
+    statistic > 1.96 | statistic < -1.96 ~ "statistically significant",
+    TRUE ~ "not statistically significant"
+  ))
+models_morality_scen2 <- list(crime = m_scen2_neutral_crime, econ = m_scen2_neutral_econ, encour = m_scen2_neutral_encour, free = m_scen2_neutral_free, 
+                              health = m_scen2_neutral_health, trust = m_scen2_neutral_trust, vulner = m_scen2_neutral_vulner) %>%
+  lapply(clean_model_results) %>%
+  imap_dfr(~mutate(.x, model = .y)) %>%
+  mutate(scenario = 'scenario 2') %>%
+  mutate(significance = case_when(
+    statistic > 1.96 | statistic < -1.96 ~ "statistically significant",
+    TRUE ~ "not statistically significant"
+  ))
+models_morality_scen3 <- list(crime = m_scen3_neutral_crime, econ = m_scen3_neutral_econ, encour = m_scen3_neutral_encour, free = m_scen3_neutral_free, 
+                              health = m_scen3_neutral_health, trust = m_scen3_neutral_trust, vulner = m_scen3_neutral_vulner) %>%
+  lapply(clean_model_results) %>%
+  imap_dfr(~mutate(.x, model = .y)) %>%
+  mutate(scenario = 'scenario 3') %>%
+  mutate(significance = case_when(
+    statistic > 1.96 | statistic < -1.96 ~ "statistically significant",
+    TRUE ~ "not statistically significant"
+  ))
+models_morality_scen4 <- list(crime = m_scen4_neutral_crime, econ = m_scen4_neutral_econ, encour = m_scen4_neutral_encour, free = m_scen4_neutral_free, 
+                              health = m_scen4_neutral_health, trust = m_scen4_neutral_trust, vulner = m_scen4_neutral_vulner) %>%
+  lapply(clean_model_results) %>%
+  imap_dfr(~mutate(.x, model = .y)) %>%
+  mutate(scenario = 'scenario 4') %>%
+  mutate(significance = case_when(
+    statistic > 1.96 | statistic < -1.96 ~ "statistically significant",
+    TRUE ~ "not statistically significant"
+  ))
+models_morality_scen5 <- list(crime = m_scen5_neutral_crime, econ = m_scen5_neutral_econ, encour = m_scen5_neutral_encour, free = m_scen5_neutral_free, 
+                              health = m_scen5_neutral_health, trust = m_scen5_neutral_trust, vulner = m_scen5_neutral_vulner) %>%
+  lapply(clean_model_results) %>%
+  imap_dfr(~mutate(.x, model = .y)) %>%
+  mutate(scenario = 'scenario 5') %>%
+  mutate(significance = case_when(
+    statistic > 1.96 | statistic < -1.96 ~ "statistically significant",
+    TRUE ~ "not statistically significant"
+  ))
+models_morality_scen6 <- list(crime = m_scen6_neutral_crime, econ = m_scen6_neutral_econ, encour = m_scen6_neutral_encour, free = m_scen6_neutral_free, 
+                              health = m_scen6_neutral_health, trust = m_scen6_neutral_trust, vulner = m_scen6_neutral_vulner) %>%
+  lapply(clean_model_results) %>%
+  imap_dfr(~mutate(.x, model = .y)) %>%
+  mutate(scenario = 'scenario 6') %>%
+  mutate(significance = case_when(
+    statistic > 1.96 | statistic < -1.96 ~ "statistically significant",
+    TRUE ~ "not statistically significant"
+  ))
+
+all_models <-
+  models_morality_scen1 %>%
+  bind_rows(models_morality_scen2) %>%
+  bind_rows(models_morality_scen3) %>%
+  bind_rows(models_morality_scen4) %>%
+  bind_rows(models_morality_scen5) %>%
+  bind_rows(models_morality_scen6) %>%
+  mutate(scenario = case_when(
+    scenario == "scenario 1" ~ "Scenario 1: Death Penalty",
+    scenario == "scenario 2" ~ "Scenario 2: Prohibition (without death penalty)",
+    scenario == "scenario 3" ~ "Scenario 3: Decriminalisation (with diversion)",
+    scenario == "scenario 4" ~ "Scenario 4: Decriminalisation (without diversion)",
+    scenario == "scenario 5" ~ "Scenario 5: Legalisation (with government regulation)",
+    scenario == "scenario 6" ~ "Scenario 6: Legalisation (without government regulation)",
+  )) %>%
+  mutate(unique = paste(scenario, "-", model))
+
+ft_list <- list()
+
+term_labels <- c(
+  "scen1crimeTRUE" = "Approach would reduce crime",
+  "scen2crimeTRUE" = "Approach would reduce crime",
+  "scen3crimeTRUE" = "Approach would reduce crime",
+  "scen4crimeTRUE" = "Approach would reduce crime",
+  "scen5crimeTRUE" = "Approach would reduce crime",
+  "scen6crimeTRUE" = "Approach would reduce crime",
+  "scen1econTRUE" = "Approach would boost the economy",
+  "scen2econTRUE" = "Approach would boost the economy",
+  "scen3econTRUE" = "Approach would boost the economy",
+  "scen4econTRUE" = "Approach would boost the economy",
+  "scen5econTRUE" = "Approach would boost the economy",
+  "scen6econTRUE" = "Approach would boost the economy",
+  "scen1freeTRUE" = "Approach would restrict freedom",
+  "scen2freeTRUE" = "Approach would restrict freedom",
+  "scen3freeTRUE" = "Approach would restrict freedom",
+  "scen4freeTRUE" = "Approach would restrict freedom",
+  "scen5freeTRUE" = "Approach would restrict freedom",
+  "scen6freeTRUE" = "Approach would restrict freedom",
+  "scen1encourTRUE" = "Approach would encourage drug use",
+  "scen2encourTRUE" = "Approach would encourage drug use",
+  "scen3encourTRUE" = "Approach would encourage drug use",
+  "scen4encourTRUE" = "Approach would encourage drug use",
+  "scen5encourTRUE" = "Approach would encourage drug use",
+  "scen6encourTRUE" = "Approach would encourage drug use",
+  "scen1healthTRUE" = "Approach would improve health and wellbeing",
+  "scen2healthTRUE" = "Approach would improve health and wellbeing",
+  "scen3healthTRUE" = "Approach would improve health and wellbeing",
+  "scen4healthTRUE" = "Approach would improve health and wellbeing",
+  "scen5healthTRUE" = "Approach would improve health and wellbeing",
+  "scen6healthTRUE" = "Approach would improve health and wellbeing",
+  "scen1vulnerTRUE" = "Approach would hurt the most vulnerable",
+  "scen2vulnerTRUE" = "Approach would hurt the most vulnerable",
+  "scen3vulnerTRUE" = "Approach would hurt the most vulnerable",
+  "scen4vulnerTRUE" = "Approach would hurt the most vulnerable",
+  "scen5vulnerTRUE" = "Approach would hurt the most vulnerable",
+  "scen6vulnerTRUE" = "Approach would hurt the most vulnerable",
+  "scen1trustTRUE" = "Approach would improve trust in government",
+  "scen2trustTRUE" = "Approach would improve trust in government",
+  "scen3trustTRUE" = "Approach would improve trust in government",
+  "scen4trustTRUE" = "Approach would improve trust in government",
+  "scen5trustTRUE" = "Approach would improve trust in government",
+  "scen6trustTRUE" = "Approach would improve trust in government",
+  "scen1_immoralImmoral" = "Approach is Immoral",
+  "scen2_immoralImmoral" = "Approach is Immoral",
+  "scen3_immoralImmoral" = "Approach is Immoral",
+  "scen4_immoralImmoral" = "Approach is Immoral",
+  "scen5_immoralImmoral" = "Approach is Immoral",
+  "scen6_immoralImmoral" = "Approach is Immoral",
+  "scen1_immoralMoral" = "Approach is Moral",
+  "scen2_immoralMoral" = "Approach is Moral",
+  "scen3_immoralMoral" = "Approach is Moral",
+  "scen4_immoralMoral" = "Approach is Moral",
+  "scen5_immoralMoral" = "Approach is Moral",
+  "scen6_immoralMoral" = "Approach is Moral"
+)
+
+
+# Loop through each unique model
+for (model_name in unique(all_models$unique)) {
+  
+  # Filter data for the current model
+  model_data <- all_models %>% filter(unique == model_name)
+  
+  # save title
+  #my_title <- model_data$scenario
+  
+  # Remove 'model' and 'scenario' columns
+  model_data <- model_data %>% dplyr::select(-model, -scenario, -unique)
+  
+  # Round numeric columns to two decimal points
+  model_data <- model_data %>%
+    mutate(across(c(estimate, std.error, statistic), ~ round(.x, 2)))
+  
+  # Customize the labels in the 'term' column
+  model_data <- model_data %>%
+    mutate(term = recode(term, !!!term_labels))
+  
+  # Create a flextable for the current model
+  ft <- model_data %>%
+    flextable() %>%
+    set_header_labels(term = "Variable",  # Custom label for 'Term'
+                      estimate = "Estimate", 
+                      std.error = "Standard Error", 
+                      statistic = "Statistic", 
+                      significance = "Significance") %>%
+    # Add a centered title row at the top
+    add_header_lines(values = c(paste("I support this approach:", sub(" -.*", "", model_name)))) %>%
+    set_table_properties(layout = "autofit") %>%
+    #add_header_row(values = c(paste("I support this approach:", sub(" -.*", "", model_name)), rep("", ncol(model_data)-1)), top = TRUE) %>%
+    #align(align = "center", part = "header") %>%  # Center the header row
+    theme_vanilla()
+  
+  # Store the table in the list
+  ft_list[[model_name]] <- ft
+}
+
+
+# Create a function to export tables to Word
+export_to_word <- function(ft_list, scenario_name) {
+  # Create a new Word document
+  doc <- read_docx()
+  
+  # Correctly pull models in the current scenario
+  models_in_scenario <- unique(all_models %>% filter(scenario == scenario_name) %>% pull(unique))
+  
+  # Loop through the models in the current scenario and add tables
+  for (model_name in models_in_scenario) {
+    # Ensure the flextable exists for the current model
+    ft <- ft_list[[model_name]]
+    
+    # Check if the model exists in ft_list
+    if (is.null(ft)) {
+      warning(paste("Model", model_name, "is missing from ft_list"))
+      next  # Skip to the next model if it's missing
+    }
+    
+    # If it's already a flextable, directly add it to the document
+    if (inherits(ft, "flextable")) {
+      # Add the flextable to the Word document
+      doc <- doc %>%
+        body_add_flextable(ft) %>%  # Add the flextable directly
+        body_add_par(" ", style = "Normal")  # Add space between tables (optional)
+    } else {
+      warning(paste("Model", model_name, "is not a valid flextable"))
+    }
+  }
+  
+  # Export the Word document to a file
+  output_file <- paste0("tables - models Morality/model_results_", scenario_name, ".docx")
+  print(doc, target = output_file)
+}
+
+# Export tables for each scenario
+for (scenario_name in unique(all_models$scenario)) {
+  export_to_word(ft_list, scenario_name)
+}
+
+
+
+
+
+
+
+ft_crime_scen1 <-
+  models_morality_scen1 %>%
+  filter(model == "crime" & scenario == "scenario 1") %>%
+  dplyr::select(-model, -scenario) %>%
+  mutate(across(c(estimate, std.error, statistic), ~ round(.x, 2))) %>%
+  flextable %>%
+  set_header_labels(term = "Variable", 
+                    estimate = "Estimate", 
+                    std.error = "Standard Error", 
+                    statistic = "Statistic", 
+                    significance = "Significance") %>%
+  add_header_row(values = c("I support this approach: Death penalty", rep("", 4)), top = TRUE) %>%
+  align(align = "center", part = "header") %>%
+  theme_vanilla()
+
+
+# Function to create flextable from models
+create_flextable <- function(models, group_name, omit_vars = c("age", "male", "country")) {
+  # Extract model results and tidy them
+  results <- do.call(rbind, lapply(models, function(model) {
+    tidy(model)
+  }))
+  results$model <- rep(names(models), each = nrow(tidy(models[[1]])))  # Add model names
+  
+  # Regular expressions to omit control variables
+  omit_pattern <- paste0("^(", paste(omit_vars, collapse = "|"), ")(TRUE|.*)?$")
+  
+  # Filter out unwanted terms
+  results <- results[!grepl(omit_pattern, results$term), ]
+  
+  # Create a flextable
+  ft <- flextable(results) %>%
+    set_header_labels(
+      term = "Term", estimate = "Estimate", std.error = "Std. Error", 
+      statistic = "z Value", p.value = "p-Value", model = "Model"
+    ) %>%
+    theme_vanilla() %>%
+    autofit()
+  
+  return(ft)
+}
+
+model_groups_morality <- split(models_neutral, rep(1:6, each = 7))
+
+doc <- read_docx()
+
+for (i in seq_along(model_groups_morality)) {
+  group_name <- paste0("Group_", i)
+  ft <- create_flextable(model_groups_morality[[i]], group_name)
+  
+  doc <- doc %>%
+    body_add_par(value = paste0("Table for ", group_name), style = "heading 1") %>%
+    body_add_flextable(ft)
+}
+
+# Save the combined document
+print(doc, target = file.path("tables - models", "All_Tables.docx"))
+
+
+#
+
+m_scen1_moral_crime <- polr(scen1supp ~ scen1crime * scen1_immoral + age + male + country, data =data_moral, method = 'logistic')
+m_scen2_moral_crime <- polr(scen2supp ~ scen2crime * scen2_immoral + age + male + country, data =data_moral, method = 'logistic')
+m_scen3_moral_crime <- polr(scen3supp ~ scen3crime * scen3_immoral + age + male + country, data =data_moral, method = 'logistic')
+m_scen4_moral_crime <- polr(scen4supp ~ scen4crime * scen4_immoral + age + male + country, data =data_moral, method = 'logistic')
+m_scen5_moral_crime <- polr(scen5supp ~ scen5crime * scen5_immoral + age + male + country, data =data_moral, method = 'logistic')
+m_scen6_moral_crime <- polr(scen6supp ~ scen6crime * scen6_immoral + age + male + country, data =data_moral, method = 'logistic')
+
+## approach would encourage drug use
+m_scen1_moral_encour <- polr(scen1supp ~ scen1encour * scen1_immoral + age + male + country, data =data_moral, method = 'logistic')
+m_scen2_moral_encour <- polr(scen2supp ~ scen2encour * scen2_immoral + age + male + country, data =data_moral, method = 'logistic')
+m_scen3_moral_encour <- polr(scen3supp ~ scen3encour * scen3_immoral + age + male + country, data =data_moral, method = 'logistic')
+m_scen4_moral_encour <- polr(scen4supp ~ scen4encour * scen4_immoral + age + male + country, data =data_moral, method = 'logistic')
+m_scen5_moral_encour <- polr(scen5supp ~ scen5encour * scen5_immoral + age + male + country, data =data_moral, method = 'logistic')
+m_scen6_moral_encour <- polr(scen6supp ~ scen6encour * scen6_immoral + age + male + country, data =data_moral, method = 'logistic')
+
+## approach would restrict freedom
+m_scen1_moral_free <- polr(scen1supp ~ scen1free * scen1_immoral + age + male + country, data =data_moral, method = 'logistic')
+m_scen2_moral_free <- polr(scen2supp ~ scen2free * scen2_immoral + age + male + country, data =data_moral, method = 'logistic')
+m_scen3_moral_free <- polr(scen3supp ~ scen3free * scen3_immoral + age + male + country, data =data_moral, method = 'logistic')
+m_scen4_moral_free <- polr(scen4supp ~ scen4free * scen4_immoral + age + male + country, data =data_moral, method = 'logistic')
+m_scen5_moral_free <- polr(scen5supp ~ scen5free * scen5_immoral + age + male + country, data =data_moral, method = 'logistic')
+m_scen6_moral_free <- polr(scen6supp ~ scen6free * scen6_immoral + age + male + country, data =data_moral, method = 'logistic')
+
+## approach would improve health and wellbeing
+m_scen1_moral_health <- polr(scen1supp ~ scen1health * scen1_immoral + age + male + country, data =data_moral, method = 'logistic')
+m_scen2_moral_health <- polr(scen2supp ~ scen2health * scen2_immoral + age + male + country, data =data_moral, method = 'logistic')
+m_scen3_moral_health <- polr(scen3supp ~ scen3health * scen3_immoral + age + male + country, data =data_moral, method = 'logistic')
+m_scen4_moral_health <- polr(scen4supp ~ scen4health * scen4_immoral + age + male + country, data =data_moral, method = 'logistic')
+m_scen5_moral_health <- polr(scen5supp ~ scen5health * scen5_immoral + age + male + country, data =data_moral, method = 'logistic')
+m_scen6_moral_health <- polr(scen6supp ~ scen6health * scen6_immoral + age + male + country, data =data_moral, method = 'logistic')
+
+## approach would hurt the most vulnerable
+m_scen1_moral_vulner <- polr(scen1supp ~ scen1vulner * scen1_immoral + age + male + country, data =data_moral, method = 'logistic')
+m_scen2_moral_vulner <- polr(scen2supp ~ scen2vulner * scen2_immoral + age + male + country, data =data_moral, method = 'logistic')
+m_scen3_moral_vulner <- polr(scen3supp ~ scen3vulner * scen3_immoral + age + male + country, data =data_moral, method = 'logistic')
+m_scen4_moral_vulner <- polr(scen4supp ~ scen4vulner * scen4_immoral + age + male + country, data =data_moral, method = 'logistic')
+m_scen5_moral_vulner <- polr(scen5supp ~ scen5vulner * scen5_immoral + age + male + country, data =data_moral, method = 'logistic')
+m_scen6_moral_vulner <- polr(scen6supp ~ scen6vulner * scen6_immoral + age + male + country, data =data_moral, method = 'logistic')
+
+## would boost the economy
+m_scen1_moral_econ <- polr(scen1supp ~ scen1econ * scen1_immoral + age + male + country, data =data_moral, method = 'logistic')
+m_scen2_moral_econ <- polr(scen2supp ~ scen2econ * scen2_immoral + age + male + country, data =data_moral, method = 'logistic')
+m_scen3_moral_econ <- polr(scen3supp ~ scen3econ * scen3_immoral + age + male + country, data =data_moral, method = 'logistic')
+m_scen4_moral_econ <- polr(scen4supp ~ scen4econ * scen4_immoral + age + male + country, data =data_moral, method = 'logistic')
+m_scen5_moral_econ <- polr(scen5supp ~ scen5econ * scen5_immoral + age + male + country, data =data_moral, method = 'logistic')
+m_scen6_moral_econ <- polr(scen6supp ~ scen6econ * scen6_immoral + age + male + country, data =data_moral, method = 'logistic')
+
+## would improve trust in govt
+m_scen1_moral_trust <- polr(scen1supp ~ scen1trust * scen1_immoral + age + male + country, data =data_moral, method = 'logistic')
+m_scen2_moral_trust <- polr(scen2supp ~ scen2trust * scen2_immoral + age + male + country, data =data_moral, method = 'logistic')
+m_scen3_moral_trust <- polr(scen3supp ~ scen3trust * scen3_immoral + age + male + country, data =data_moral, method = 'logistic')
+m_scen4_moral_trust <- polr(scen4supp ~ scen4trust * scen4_immoral + age + male + country, data =data_moral, method = 'logistic')
+m_scen5_moral_trust <- polr(scen5supp ~ scen5trust * scen5_immoral + age + male + country, data =data_moral, method = 'logistic')
+m_scen6_moral_trust <- polr(scen6supp ~ scen6trust * scen6_immoral + age + male + country, data =data_moral, method = 'logistic')
+
+models_moral <- list(m_scen1_moral_crime, m_scen2_moral_crime, m_scen3_moral_crime, m_scen4_moral_crime, m_scen5_moral_crime, m_scen6_moral_crime,
+                       m_scen1_moral_encour, m_scen2_moral_encour, m_scen3_moral_encour, m_scen4_moral_encour, m_scen5_moral_encour, m_scen6_moral_encour,
+                       m_scen1_moral_free, m_scen2_moral_free, m_scen3_moral_free, m_scen4_moral_free, m_scen5_moral_free, m_scen6_moral_free,
+                       m_scen1_moral_health, m_scen2_moral_health, m_scen3_moral_health, m_scen4_moral_health, m_scen5_moral_health, m_scen6_moral_health,
+                       m_scen1_moral_vulner, m_scen2_moral_vulner, m_scen3_moral_vulner, m_scen4_moral_vulner, m_scen5_moral_vulner, m_scen6_moral_vulner,
+                       m_scen1_moral_econ, m_scen2_moral_econ, m_scen3_moral_econ, m_scen4_moral_econ, m_scen5_moral_econ, m_scen6_moral_econ,
+                       m_scen1_moral_trust, m_scen2_moral_trust, m_scen3_moral_trust, m_scen4_moral_trust, m_scen5_moral_trust, m_scen6_moral_trust)
+
+# Apply the function to each model in the list and bind rows
+coefficients_data_moral <- lapply(models_moral, extract_coefficients) %>%
+  bind_rows() %>%
+  mutate(mor = "Moral",
+         scen = rep(c('Scenario 1', 'Scenario 2', 'Scenario 3', 'Scenario 4', 'Scenario 5', 'Scenario 6'), 7),
+         var = rep(c('crime', 'encour', 'free', 'health', 'vulner', 'econ', 'trust'), each = 6),
+         ci.lower = Coefficient - 1.96 * Std_Error,
+         ci.upper = Coefficient + 1.96 * Std_Error) %>%
+  mutate(significance = case_when(ci.lower > 0 & ci.upper > 0 ~ 'significant',
+                                  ci.lower < 0 & ci.upper < 0 ~ 'significant',
+                                  TRUE ~ 'non significant'))
+
+dataplot_immoral <-
+  coefficients_data_immoral %>%
+  bind_rows(coefficients_data_neutral) %>%
+  bind_rows(coefficients_data_moral)
+
+
+data <-
+  data %>%
+  mutate(arrest = case_when(
+    polactionsarrusecan == 1 | polactionsarrusecan == 2~ T,
+    polactionsarrsupcan == 1 | polactionsarrsupcan == 2 ~ T,
+    polactionsarruseoth == 1 | polactionsarruseoth == 2 ~ T,
+    polactionsarrsupoth == 1 | polactionsarrsupoth == 2 ~ T,
+    polactionsconvuse == 1 | polactionsconvuse == 2 ~ T,
+    polactionsconvsup == 1 | polactionsconvsup == 2 ~ T,
+    TRUE ~ FALSE
+  ))
+
+
+# ref: never arrested
+## aproach would reduce crime
+m_scen1_arrest_crime <- polr(scen1supp ~ scen1crime * arrest + age + male + country, data =data, method = 'logistic')
+m_scen2_arrest_crime <- polr(scen2supp ~ scen2crime * arrest + age + male + country, data =data, method = 'logistic')
+m_scen3_arrest_crime <- polr(scen3supp ~ scen3crime * arrest + age + male + country, data =data, method = 'logistic')
+m_scen4_arrest_crime <- polr(scen4supp ~ scen4crime * arrest + age + male + country, data =data, method = 'logistic')
+m_scen5_arrest_crime <- polr(scen5supp ~ scen5crime * arrest + age + male + country, data =data, method = 'logistic')
+m_scen6_arrest_crime <- polr(scen6supp ~ scen6crime * arrest + age + male + country, data =data, method = 'logistic')
+
+## approach would encourage drug use
+m_scen1_arrest_encour <- polr(scen1supp ~ scen1encour * arrest + age + male + country, data =data, method = 'logistic')
+m_scen2_arrest_encour <- polr(scen2supp ~ scen2encour * arrest + age + male + country, data =data, method = 'logistic')
+m_scen3_arrest_encour <- polr(scen3supp ~ scen3encour * arrest + age + male + country, data =data, method = 'logistic')
+m_scen4_arrest_encour <- polr(scen4supp ~ scen4encour * arrest + age + male + country, data =data, method = 'logistic')
+m_scen5_arrest_encour <- polr(scen5supp ~ scen5encour * arrest + age + male + country, data =data, method = 'logistic')
+m_scen6_arrest_encour <- polr(scen6supp ~ scen6encour * arrest + age + male + country, data =data, method = 'logistic')
+
+## approach would restrict freedom
+m_scen1_arrest_free <- polr(scen1supp ~ scen1free * arrest + age + male + country, data =data, method = 'logistic')
+m_scen2_arrest_free <- polr(scen2supp ~ scen2free * arrest + age + male + country, data =data, method = 'logistic')
+m_scen3_arrest_free <- polr(scen3supp ~ scen3free * arrest + age + male + country, data =data, method = 'logistic')
+m_scen4_arrest_free <- polr(scen4supp ~ scen4free * arrest + age + male + country, data =data, method = 'logistic')
+m_scen5_arrest_free <- polr(scen5supp ~ scen5free * arrest + age + male + country, data =data, method = 'logistic')
+m_scen6_arrest_free <- polr(scen6supp ~ scen6free * arrest + age + male + country, data =data, method = 'logistic')
+
+## approach would improve health and wellbeing
+m_scen1_arrest_health <- polr(scen1supp ~ scen1health * arrest + age + male + country, data =data, method = 'logistic')
+m_scen2_arrest_health <- polr(scen2supp ~ scen2health * arrest + age + male + country, data =data, method = 'logistic')
+m_scen3_arrest_health <- polr(scen3supp ~ scen3health * arrest + age + male + country, data =data, method = 'logistic')
+m_scen4_arrest_health <- polr(scen4supp ~ scen4health * arrest + age + male + country, data =data, method = 'logistic')
+m_scen5_arrest_health <- polr(scen5supp ~ scen5health * arrest + age + male + country, data =data, method = 'logistic')
+m_scen6_arrest_health <- polr(scen6supp ~ scen6health * arrest + age + male + country, data =data, method = 'logistic')
+
+## approach would hurt the most vulnerable
+m_scen1_arrest_vulner <- polr(scen1supp ~ scen1vulner * arrest + age + male + country, data =data, method = 'logistic')
+m_scen2_arrest_vulner <- polr(scen2supp ~ scen2vulner * arrest + age + male + country, data =data, method = 'logistic')
+m_scen3_arrest_vulner <- polr(scen3supp ~ scen3vulner * arrest + age + male + country, data =data, method = 'logistic')
+m_scen4_arrest_vulner <- polr(scen4supp ~ scen4vulner * arrest + age + male + country, data =data, method = 'logistic')
+m_scen5_arrest_vulner <- polr(scen5supp ~ scen5vulner * arrest + age + male + country, data =data, method = 'logistic')
+m_scen6_arrest_vulner <- polr(scen6supp ~ scen6vulner * arrest + age + male + country, data =data, method = 'logistic')
+
+## would boost the economy
+m_scen1_arrest_econ <- polr(scen1supp ~ scen1econ * arrest + age + male + country, data =data, method = 'logistic')
+m_scen2_arrest_econ <- polr(scen2supp ~ scen2econ * arrest + age + male + country, data =data, method = 'logistic')
+m_scen3_arrest_econ <- polr(scen3supp ~ scen3econ * arrest + age + male + country, data =data, method = 'logistic')
+m_scen4_arrest_econ <- polr(scen4supp ~ scen4econ * arrest + age + male + country, data =data, method = 'logistic')
+m_scen5_arrest_econ <- polr(scen5supp ~ scen5econ * arrest + age + male + country, data =data, method = 'logistic')
+m_scen6_arrest_econ <- polr(scen6supp ~ scen6econ * arrest + age + male + country, data =data, method = 'logistic')
+
+## would improve trust in govt
+m_scen1_arrest_trust <- polr(scen1supp ~ scen1trust * arrest + age + male + country, data =data, method = 'logistic')
+m_scen2_arrest_trust <- polr(scen2supp ~ scen2trust * arrest + age + male + country, data =data, method = 'logistic')
+m_scen3_arrest_trust <- polr(scen3supp ~ scen3trust * arrest + age + male + country, data =data, method = 'logistic')
+m_scen4_arrest_trust <- polr(scen4supp ~ scen4trust * arrest + age + male + country, data =data, method = 'logistic')
+m_scen5_arrest_trust <- polr(scen5supp ~ scen5trust * arrest + age + male + country, data =data, method = 'logistic')
+m_scen6_arrest_trust <- polr(scen6supp ~ scen6trust * arrest + age + male + country, data =data, method = 'logistic')
+
+
+ 
+
+
+# Apply the function to each model in the list and bind rows
+coefficients_data_arrest <- lapply(models_arrest, extract_coefficients) %>%
+  bind_rows() %>%
+  mutate(mor = "Never arrested",
+         scen = rep(c('Scenario 1', 'Scenario 2', 'Scenario 3', 'Scenario 4', 'Scenario 5', 'Scenario 6'), 7),
+         var = rep(c('crime', 'encour', 'free', 'health', 'vulner', 'econ', 'trust'), each = 6),
+         ci.lower = Coefficient - 1.96 * Std_Error,
+         ci.upper = Coefficient + 1.96 * Std_Error) %>%
+  mutate(significance = case_when(ci.lower > 0 & ci.upper > 0 ~ 'significant',
+                                  ci.lower < 0 & ci.upper < 0 ~ 'significant',
+                                  TRUE ~ 'non significant'))
+
+# changing ref cat
+data_arrest <- data %>% 
+  mutate(arrest_new = case_when(
+    arrest == F ~ "never arrested",
+    arrest == T ~ "been arrested"
+  )) %>%
+  mutate(arrest_new = factor(arrest_new, levels = c("been arrested", "never arrested")))
+
+## aproach would reduce crime
+m_scen1_arrest_new_crime <- polr(scen1supp ~ scen1crime * arrest_new + age + male + country, data =data_arrest, method = 'logistic')
+m_scen2_arrest_new_crime <- polr(scen2supp ~ scen2crime * arrest_new + age + male + country, data =data_arrest, method = 'logistic')
+m_scen3_arrest_new_crime <- polr(scen3supp ~ scen3crime * arrest_new + age + male + country, data =data_arrest, method = 'logistic')
+m_scen4_arrest_new_crime <- polr(scen4supp ~ scen4crime * arrest_new + age + male + country, data =data_arrest, method = 'logistic')
+m_scen5_arrest_new_crime <- polr(scen5supp ~ scen5crime * arrest_new + age + male + country, data =data_arrest, method = 'logistic')
+m_scen6_arrest_new_crime <- polr(scen6supp ~ scen6crime * arrest_new + age + male + country, data =data_arrest, method = 'logistic')
+
+## approach would encourage drug use
+m_scen1_arrest_new_encour <- polr(scen1supp ~ scen1encour * arrest_new + age + male + country, data =data_arrest, method = 'logistic')
+m_scen2_arrest_new_encour <- polr(scen2supp ~ scen2encour * arrest_new + age + male + country, data =data_arrest, method = 'logistic')
+m_scen3_arrest_new_encour <- polr(scen3supp ~ scen3encour * arrest_new + age + male + country, data =data_arrest, method = 'logistic')
+m_scen4_arrest_new_encour <- polr(scen4supp ~ scen4encour * arrest_new + age + male + country, data =data_arrest, method = 'logistic')
+m_scen5_arrest_new_encour <- polr(scen5supp ~ scen5encour * arrest_new + age + male + country, data =data_arrest, method = 'logistic')
+m_scen6_arrest_new_encour <- polr(scen6supp ~ scen6encour * arrest_new + age + male + country, data =data_arrest, method = 'logistic')
+
+## approach would restrict freedom
+m_scen1_arrest_new_free <- polr(scen1supp ~ scen1free * arrest_new + age + male + country, data =data_arrest, method = 'logistic')
+m_scen2_arrest_new_free <- polr(scen2supp ~ scen2free * arrest_new + age + male + country, data =data_arrest, method = 'logistic')
+m_scen3_arrest_new_free <- polr(scen3supp ~ scen3free * arrest_new + age + male + country, data =data_arrest, method = 'logistic')
+m_scen4_arrest_new_free <- polr(scen4supp ~ scen4free * arrest_new + age + male + country, data =data_arrest, method = 'logistic')
+m_scen5_arrest_new_free <- polr(scen5supp ~ scen5free * arrest_new + age + male + country, data =data_arrest, method = 'logistic')
+m_scen6_arrest_new_free <- polr(scen6supp ~ scen6free * arrest_new + age + male + country, data =data_arrest, method = 'logistic')
+
+## approach would improve health and wellbeing
+m_scen1_arrest_new_health <- polr(scen1supp ~ scen1health * arrest_new + age + male + country, data =data_arrest, method = 'logistic')
+m_scen2_arrest_new_health <- polr(scen2supp ~ scen2health * arrest_new + age + male + country, data =data_arrest, method = 'logistic')
+m_scen3_arrest_new_health <- polr(scen3supp ~ scen3health * arrest_new + age + male + country, data =data_arrest, method = 'logistic')
+m_scen4_arrest_new_health <- polr(scen4supp ~ scen4health * arrest_new + age + male + country, data =data_arrest, method = 'logistic')
+m_scen5_arrest_new_health <- polr(scen5supp ~ scen5health * arrest_new + age + male + country, data =data_arrest, method = 'logistic')
+m_scen6_arrest_new_health <- polr(scen6supp ~ scen6health * arrest_new + age + male + country, data =data_arrest, method = 'logistic')
+
+## approach would hurt the most vulnerable
+m_scen1_arrest_new_vulner <- polr(scen1supp ~ scen1vulner * arrest_new + age + male + country, data =data_arrest, method = 'logistic')
+m_scen2_arrest_new_vulner <- polr(scen2supp ~ scen2vulner * arrest_new + age + male + country, data =data_arrest, method = 'logistic')
+m_scen3_arrest_new_vulner <- polr(scen3supp ~ scen3vulner * arrest_new + age + male + country, data =data_arrest, method = 'logistic')
+m_scen4_arrest_new_vulner <- polr(scen4supp ~ scen4vulner * arrest_new + age + male + country, data =data_arrest, method = 'logistic')
+m_scen5_arrest_new_vulner <- polr(scen5supp ~ scen5vulner * arrest_new + age + male + country, data =data_arrest, method = 'logistic')
+m_scen6_arrest_new_vulner <- polr(scen6supp ~ scen6vulner * arrest_new + age + male + country, data =data_arrest, method = 'logistic')
+
+## would boost the economy
+m_scen1_arrest_new_econ <- polr(scen1supp ~ scen1econ * arrest_new + age + male + country, data =data_arrest, method = 'logistic')
+m_scen2_arrest_new_econ <- polr(scen2supp ~ scen2econ * arrest_new + age + male + country, data =data_arrest, method = 'logistic')
+m_scen3_arrest_new_econ <- polr(scen3supp ~ scen3econ * arrest_new + age + male + country, data =data_arrest, method = 'logistic')
+m_scen4_arrest_new_econ <- polr(scen4supp ~ scen4econ * arrest_new + age + male + country, data =data_arrest, method = 'logistic')
+m_scen5_arrest_new_econ <- polr(scen5supp ~ scen5econ * arrest_new + age + male + country, data =data_arrest, method = 'logistic')
+m_scen6_arrest_new_econ <- polr(scen6supp ~ scen6econ * arrest_new + age + male + country, data =data_arrest, method = 'logistic')
+
+## would improve trust in govt
+m_scen1_arrest_new_trust <- polr(scen1supp ~ scen1trust * arrest_new + age + male + country, data =data_arrest, method = 'logistic')
+m_scen2_arrest_new_trust <- polr(scen2supp ~ scen2trust * arrest_new + age + male + country, data =data_arrest, method = 'logistic')
+m_scen3_arrest_new_trust <- polr(scen3supp ~ scen3trust * arrest_new + age + male + country, data =data_arrest, method = 'logistic')
+m_scen4_arrest_new_trust <- polr(scen4supp ~ scen4trust * arrest_new + age + male + country, data =data_arrest, method = 'logistic')
+m_scen5_arrest_new_trust <- polr(scen5supp ~ scen5trust * arrest_new + age + male + country, data =data_arrest, method = 'logistic')
+m_scen6_arrest_new_trust <- polr(scen6supp ~ scen6trust * arrest_new + age + male + country, data =data_arrest, method = 'logistic')
+
+
+models_arrest_new <- list(m_scen1_arrest_new_crime, m_scen2_arrest_new_crime, m_scen3_arrest_new_crime, m_scen4_arrest_new_crime, m_scen5_arrest_new_crime, m_scen6_arrest_new_crime,
+                    m_scen1_arrest_new_encour, m_scen2_arrest_new_encour, m_scen3_arrest_new_encour, m_scen4_arrest_new_encour, m_scen5_arrest_new_encour, m_scen6_arrest_new_encour,
+                    m_scen1_arrest_new_free, m_scen2_arrest_new_free, m_scen3_arrest_new_free, m_scen4_arrest_new_free, m_scen5_arrest_new_free, m_scen6_arrest_new_free,
+                    m_scen1_arrest_new_health, m_scen2_arrest_new_health, m_scen3_arrest_new_health, m_scen4_arrest_new_health, m_scen5_arrest_new_health, m_scen6_arrest_new_health,
+                    m_scen1_arrest_new_vulner, m_scen2_arrest_new_vulner, m_scen3_arrest_new_vulner, m_scen4_arrest_new_vulner, m_scen5_arrest_new_vulner, m_scen6_arrest_new_vulner,
+                    m_scen1_arrest_new_econ, m_scen2_arrest_new_econ, m_scen3_arrest_new_econ, m_scen4_arrest_new_econ, m_scen5_arrest_new_econ, m_scen6_arrest_new_econ,
+                    m_scen1_arrest_new_trust, m_scen2_arrest_new_trust, m_scen3_arrest_new_trust, m_scen4_arrest_new_trust, m_scen5_arrest_new_trust, m_scen6_arrest_new_trust)
+
+
+# Apply the function to each model in the list and bind rows
+coefficients_data_arrest_new <- lapply(models_arrest_new, extract_coefficients) %>%
+  bind_rows() %>%
+  mutate(mor = "Been arrested",
+         scen = rep(c('Scenario 1', 'Scenario 2', 'Scenario 3', 'Scenario 4', 'Scenario 5', 'Scenario 6'), 7),
+         var = rep(c('crime', 'encour', 'free', 'health', 'vulner', 'econ', 'trust'), each = 6),
+         ci.lower = Coefficient - 1.96 * Std_Error,
+         ci.upper = Coefficient + 1.96 * Std_Error) %>%
+  mutate(significance = case_when(ci.lower > 0 & ci.upper > 0 ~ 'significant',
+                                  ci.lower < 0 & ci.upper < 0 ~ 'significant',
+                                  TRUE ~ 'non significant'))
+
+
+
+# ref: never arrested
+## aproach would reduce crime
+m_scen1_purchase_crime <- polr(scen1supp ~ scen1crime * purchase + age + male + country, data =data, method = 'logistic')
+m_scen2_purchase_crime <- polr(scen2supp ~ scen2crime * purchase + age + male + country, data =data, method = 'logistic')
+m_scen3_purchase_crime <- polr(scen3supp ~ scen3crime * purchase + age + male + country, data =data, method = 'logistic')
+m_scen4_purchase_crime <- polr(scen4supp ~ scen4crime * purchase + age + male + country, data =data, method = 'logistic')
+m_scen5_purchase_crime <- polr(scen5supp ~ scen5crime * purchase + age + male + country, data =data, method = 'logistic')
+m_scen6_purchase_crime <- polr(scen6supp ~ scen6crime * purchase + age + male + country, data =data, method = 'logistic')
+
+## approach would encourage drug use
+m_scen1_purchase_encour <- polr(scen1supp ~ scen1encour * purchase + age + male + country, data =data, method = 'logistic')
+m_scen2_purchase_encour <- polr(scen2supp ~ scen2encour * purchase + age + male + country, data =data, method = 'logistic')
+m_scen3_purchase_encour <- polr(scen3supp ~ scen3encour * purchase + age + male + country, data =data, method = 'logistic')
+m_scen4_purchase_encour <- polr(scen4supp ~ scen4encour * purchase + age + male + country, data =data, method = 'logistic')
+m_scen5_purchase_encour <- polr(scen5supp ~ scen5encour * purchase + age + male + country, data =data, method = 'logistic')
+m_scen6_purchase_encour <- polr(scen6supp ~ scen6encour * purchase + age + male + country, data =data, method = 'logistic')
+
+## approach would restrict freedom
+m_scen1_purchase_free <- polr(scen1supp ~ scen1free * purchase + age + male + country, data =data, method = 'logistic')
+m_scen2_purchase_free <- polr(scen2supp ~ scen2free * purchase + age + male + country, data =data, method = 'logistic')
+m_scen3_purchase_free <- polr(scen3supp ~ scen3free * purchase + age + male + country, data =data, method = 'logistic')
+m_scen4_purchase_free <- polr(scen4supp ~ scen4free * purchase + age + male + country, data =data, method = 'logistic')
+m_scen5_purchase_free <- polr(scen5supp ~ scen5free * purchase + age + male + country, data =data, method = 'logistic')
+m_scen6_purchase_free <- polr(scen6supp ~ scen6free * purchase + age + male + country, data =data, method = 'logistic')
+
+## approach would improve health and wellbeing
+m_scen1_purchase_health <- polr(scen1supp ~ scen1health * purchase + age + male + country, data =data, method = 'logistic')
+m_scen2_purchase_health <- polr(scen2supp ~ scen2health * purchase + age + male + country, data =data, method = 'logistic')
+m_scen3_purchase_health <- polr(scen3supp ~ scen3health * purchase + age + male + country, data =data, method = 'logistic')
+m_scen4_purchase_health <- polr(scen4supp ~ scen4health * purchase + age + male + country, data =data, method = 'logistic')
+m_scen5_purchase_health <- polr(scen5supp ~ scen5health * purchase + age + male + country, data =data, method = 'logistic')
+m_scen6_purchase_health <- polr(scen6supp ~ scen6health * purchase + age + male + country, data =data, method = 'logistic')
+
+## approach would hurt the most vulnerable
+m_scen1_purchase_vulner <- polr(scen1supp ~ scen1vulner * purchase + age + male + country, data =data, method = 'logistic')
+m_scen2_purchase_vulner <- polr(scen2supp ~ scen2vulner * purchase + age + male + country, data =data, method = 'logistic')
+m_scen3_purchase_vulner <- polr(scen3supp ~ scen3vulner * purchase + age + male + country, data =data, method = 'logistic')
+m_scen4_purchase_vulner <- polr(scen4supp ~ scen4vulner * purchase + age + male + country, data =data, method = 'logistic')
+m_scen5_purchase_vulner <- polr(scen5supp ~ scen5vulner * purchase + age + male + country, data =data, method = 'logistic')
+m_scen6_purchase_vulner <- polr(scen6supp ~ scen6vulner * purchase + age + male + country, data =data, method = 'logistic')
+
+## would boost the economy
+m_scen1_purchase_econ <- polr(scen1supp ~ scen1econ * purchase + age + male + country, data =data, method = 'logistic')
+m_scen2_purchase_econ <- polr(scen2supp ~ scen2econ * purchase + age + male + country, data =data, method = 'logistic')
+m_scen3_purchase_econ <- polr(scen3supp ~ scen3econ * purchase + age + male + country, data =data, method = 'logistic')
+m_scen4_purchase_econ <- polr(scen4supp ~ scen4econ * purchase + age + male + country, data =data, method = 'logistic')
+m_scen5_purchase_econ <- polr(scen5supp ~ scen5econ * purchase + age + male + country, data =data, method = 'logistic')
+m_scen6_purchase_econ <- polr(scen6supp ~ scen6econ * purchase + age + male + country, data =data, method = 'logistic')
+
+## would improve trust in govt
+m_scen1_purchase_trust <- polr(scen1supp ~ scen1trust * purchase + age + male + country, data =data, method = 'logistic')
+m_scen2_purchase_trust <- polr(scen2supp ~ scen2trust * purchase + age + male + country, data =data, method = 'logistic')
+m_scen3_purchase_trust <- polr(scen3supp ~ scen3trust * purchase + age + male + country, data =data, method = 'logistic')
+m_scen4_purchase_trust <- polr(scen4supp ~ scen4trust * purchase + age + male + country, data =data, method = 'logistic')
+m_scen5_purchase_trust <- polr(scen5supp ~ scen5trust * purchase + age + male + country, data =data, method = 'logistic')
+m_scen6_purchase_trust <- polr(scen6supp ~ scen6trust * purchase + age + male + country, data =data, method = 'logistic')
+
+models_purchase <- list(m_scen1_purchase_crime, m_scen2_purchase_crime, m_scen3_purchase_crime, m_scen4_purchase_crime, m_scen5_purchase_crime, m_scen6_purchase_crime,
+                        m_scen1_purchase_encour, m_scen2_purchase_encour, m_scen3_purchase_encour, m_scen4_purchase_encour, m_scen5_purchase_encour, m_scen6_purchase_encour,
+                        m_scen1_purchase_free, m_scen2_purchase_free, m_scen3_purchase_free, m_scen4_purchase_free, m_scen5_purchase_free, m_scen6_purchase_free,
+                        m_scen1_purchase_health, m_scen2_purchase_health, m_scen3_purchase_health, m_scen4_purchase_health, m_scen5_purchase_health, m_scen6_purchase_health,
+                        m_scen1_purchase_vulner, m_scen2_purchase_vulner, m_scen3_purchase_vulner, m_scen4_purchase_vulner, m_scen5_purchase_vulner, m_scen6_purchase_vulner,
+                        m_scen1_purchase_econ, m_scen2_purchase_econ, m_scen3_purchase_econ, m_scen4_purchase_econ, m_scen5_purchase_econ, m_scen6_purchase_econ,
+                        m_scen1_purchase_trust, m_scen2_purchase_trust, m_scen3_purchase_trust, m_scen4_purchase_trust, m_scen5_purchase_trust, m_scen6_purchase_trust)
+
+data_notlast12 <- data %>%
+  mutate(purchase = factor(purchase, levels = c("Yes, but not in the last 12 months", "Yes, in the last 12 months")))
+
+## aproach would reduce crime
+m_scen1_purchasenotlast12_crime <- polr(scen1supp ~ scen1crime * purchase + age + male + country, data =data_notlast12, method = 'logistic')
+m_scen2_purchasenotlast12_crime <- polr(scen2supp ~ scen2crime * purchase + age + male + country, data =data_notlast12, method = 'logistic')
+m_scen3_purchasenotlast12_crime <- polr(scen3supp ~ scen3crime * purchase + age + male + country, data =data_notlast12, method = 'logistic')
+m_scen4_purchasenotlast12_crime <- polr(scen4supp ~ scen4crime * purchase + age + male + country, data =data_notlast12, method = 'logistic')
+m_scen5_purchasenotlast12_crime <- polr(scen5supp ~ scen5crime * purchase + age + male + country, data =data_notlast12, method = 'logistic')
+m_scen6_purchasenotlast12_crime <- polr(scen6supp ~ scen6crime * purchase + age + male + country, data =data_notlast12, method = 'logistic')
+
+## approach would encourage drug use
+m_scen1_purchasenotlast12_encour <- polr(scen1supp ~ scen1encour * purchase + age + male + country, data =data_notlast12, method = 'logistic')
+m_scen2_purchasenotlast12_encour <- polr(scen2supp ~ scen2encour * purchase + age + male + country, data =data_notlast12, method = 'logistic')
+m_scen3_purchasenotlast12_encour <- polr(scen3supp ~ scen3encour * purchase + age + male + country, data =data_notlast12, method = 'logistic')
+m_scen4_purchasenotlast12_encour <- polr(scen4supp ~ scen4encour * purchase + age + male + country, data =data_notlast12, method = 'logistic')
+m_scen5_purchasenotlast12_encour <- polr(scen5supp ~ scen5encour * purchase + age + male + country, data =data_notlast12, method = 'logistic')
+m_scen6_purchasenotlast12_encour <- polr(scen6supp ~ scen6encour * purchase + age + male + country, data =data_notlast12, method = 'logistic')
+
+## approach would restrict freedom
+m_scen1_purchasenotlast12_free <- polr(scen1supp ~ scen1free * purchase + age + male + country, data =data_notlast12, method = 'logistic')
+m_scen2_purchasenotlast12_free <- polr(scen2supp ~ scen2free * purchase + age + male + country, data =data_notlast12, method = 'logistic')
+m_scen3_purchasenotlast12_free <- polr(scen3supp ~ scen3free * purchase + age + male + country, data =data_notlast12, method = 'logistic')
+m_scen4_purchasenotlast12_free <- polr(scen4supp ~ scen4free * purchase + age + male + country, data =data_notlast12, method = 'logistic')
+m_scen5_purchasenotlast12_free <- polr(scen5supp ~ scen5free * purchase + age + male + country, data =data_notlast12, method = 'logistic')
+m_scen6_purchasenotlast12_free <- polr(scen6supp ~ scen6free * purchase + age + male + country, data =data_notlast12, method = 'logistic')
+
+## approach would improve health and wellbeing
+m_scen1_purchasenotlast12_health <- polr(scen1supp ~ scen1health * purchase + age + male + country, data =data_notlast12, method = 'logistic')
+m_scen2_purchasenotlast12_health <- polr(scen2supp ~ scen2health * purchase + age + male + country, data =data_notlast12, method = 'logistic')
+m_scen3_purchasenotlast12_health <- polr(scen3supp ~ scen3health * purchase + age + male + country, data =data_notlast12, method = 'logistic')
+m_scen4_purchasenotlast12_health <- polr(scen4supp ~ scen4health * purchase + age + male + country, data =data_notlast12, method = 'logistic')
+m_scen5_purchasenotlast12_health <- polr(scen5supp ~ scen5health * purchase + age + male + country, data =data_notlast12, method = 'logistic')
+m_scen6_purchasenotlast12_health <- polr(scen6supp ~ scen6health * purchase + age + male + country, data =data_notlast12, method = 'logistic')
+
+## approach would hurt the most vulnerable
+m_scen1_purchasenotlast12_vulner <- polr(scen1supp ~ scen1vulner * purchase + age + male + country, data =data_notlast12, method = 'logistic')
+m_scen2_purchasenotlast12_vulner <- polr(scen2supp ~ scen2vulner * purchase + age + male + country, data =data_notlast12, method = 'logistic')
+m_scen3_purchasenotlast12_vulner <- polr(scen3supp ~ scen3vulner * purchase + age + male + country, data =data_notlast12, method = 'logistic')
+m_scen4_purchasenotlast12_vulner <- polr(scen4supp ~ scen4vulner * purchase + age + male + country, data =data_notlast12, method = 'logistic')
+m_scen5_purchasenotlast12_vulner <- polr(scen5supp ~ scen5vulner * purchase + age + male + country, data =data_notlast12, method = 'logistic')
+m_scen6_purchasenotlast12_vulner <- polr(scen6supp ~ scen6vulner * purchase + age + male + country, data =data_notlast12, method = 'logistic')
+
+## would boost the economy
+m_scen1_purchasenotlast12_econ <- polr(scen1supp ~ scen1econ * purchase + age + male + country, data =data_notlast12, method = 'logistic')
+m_scen2_purchasenotlast12_econ <- polr(scen2supp ~ scen2econ * purchase + age + male + country, data =data_notlast12, method = 'logistic')
+m_scen3_purchasenotlast12_econ <- polr(scen3supp ~ scen3econ * purchase + age + male + country, data =data_notlast12, method = 'logistic')
+m_scen4_purchasenotlast12_econ <- polr(scen4supp ~ scen4econ * purchase + age + male + country, data =data_notlast12, method = 'logistic')
+m_scen5_purchasenotlast12_econ <- polr(scen5supp ~ scen5econ * purchase + age + male + country, data =data_notlast12, method = 'logistic')
+m_scen6_purchasenotlast12_econ <- polr(scen6supp ~ scen6econ * purchase + age + male + country, data =data_notlast12, method = 'logistic')
+
+## would improve trust in govt
+m_scen1_purchasenotlast12_trust <- polr(scen1supp ~ scen1trust * purchase + age + male + country, data =data_notlast12, method = 'logistic')
+m_scen2_purchasenotlast12_trust <- polr(scen2supp ~ scen2trust * purchase + age + male + country, data =data_notlast12, method = 'logistic')
+m_scen3_purchasenotlast12_trust <- polr(scen3supp ~ scen3trust * purchase + age + male + country, data =data_notlast12, method = 'logistic')
+m_scen4_purchasenotlast12_trust <- polr(scen4supp ~ scen4trust * purchase + age + male + country, data =data_notlast12, method = 'logistic')
+m_scen5_purchasenotlast12_trust <- polr(scen5supp ~ scen5trust * purchase + age + male + country, data =data_notlast12, method = 'logistic')
+m_scen6_purchasenotlast12_trust <- polr(scen6supp ~ scen6trust * purchase + age + male + country, data =data_notlast12, method = 'logistic')
+
+models_purchasenotlast12 <- list(m_scen1_purchasenotlast12_crime, m_scen2_purchasenotlast12_crime, m_scen3_purchasenotlast12_crime, m_scen4_purchasenotlast12_crime, m_scen5_purchasenotlast12_crime, m_scen6_purchasenotlast12_crime,
+                        m_scen1_purchasenotlast12_encour, m_scen2_purchasenotlast12_encour, m_scen3_purchasenotlast12_encour, m_scen4_purchasenotlast12_encour, m_scen5_purchasenotlast12_encour, m_scen6_purchasenotlast12_encour,
+                        m_scen1_purchasenotlast12_free, m_scen2_purchasenotlast12_free, m_scen3_purchasenotlast12_free, m_scen4_purchasenotlast12_free, m_scen5_purchasenotlast12_free, m_scen6_purchasenotlast12_free,
+                        m_scen1_purchasenotlast12_health, m_scen2_purchasenotlast12_health, m_scen3_purchasenotlast12_health, m_scen4_purchasenotlast12_health, m_scen5_purchasenotlast12_health, m_scen6_purchasenotlast12_health,
+                        m_scen1_purchasenotlast12_vulner, m_scen2_purchasenotlast12_vulner, m_scen3_purchasenotlast12_vulner, m_scen4_purchasenotlast12_vulner, m_scen5_purchasenotlast12_vulner, m_scen6_purchasenotlast12_vulner,
+                        m_scen1_purchasenotlast12_econ, m_scen2_purchasenotlast12_econ, m_scen3_purchasenotlast12_econ, m_scen4_purchasenotlast12_econ, m_scen5_purchasenotlast12_econ, m_scen6_purchasenotlast12_econ,
+                        m_scen1_purchasenotlast12_trust, m_scen2_purchasenotlast12_trust, m_scen3_purchasenotlast12_trust, m_scen4_purchasenotlast12_trust, m_scen5_purchasenotlast12_trust, m_scen6_purchasenotlast12_trust)
+
+
+data_last12 <- data %>%
+  mutate(purchase = factor(purchase, levels = c("Yes, in the last 12 months", "Yes, but not in the last 12 months", "No, never")))
+
+## aproach would reduce crime
+m_scen1_purchaselast12_crime <- polr(scen1supp ~ scen1crime * purchase + age + male + country, data =data_last12, method = 'logistic')
+m_scen2_purchaselast12_crime <- polr(scen2supp ~ scen2crime * purchase + age + male + country, data =data_last12, method = 'logistic')
+m_scen3_purchaselast12_crime <- polr(scen3supp ~ scen3crime * purchase + age + male + country, data =data_last12, method = 'logistic')
+m_scen4_purchaselast12_crime <- polr(scen4supp ~ scen4crime * purchase + age + male + country, data =data_last12, method = 'logistic')
+m_scen5_purchaselast12_crime <- polr(scen5supp ~ scen5crime * purchase + age + male + country, data =data_last12, method = 'logistic')
+m_scen6_purchaselast12_crime <- polr(scen6supp ~ scen6crime * purchase + age + male + country, data =data_last12, method = 'logistic')
+
+## approach would encourage drug use
+m_scen1_purchaselast12_encour <- polr(scen1supp ~ scen1encour * purchase + age + male + country, data =data_last12, method = 'logistic')
+m_scen2_purchaselast12_encour <- polr(scen2supp ~ scen2encour * purchase + age + male + country, data =data_last12, method = 'logistic')
+m_scen3_purchaselast12_encour <- polr(scen3supp ~ scen3encour * purchase + age + male + country, data =data_last12, method = 'logistic')
+m_scen4_purchaselast12_encour <- polr(scen4supp ~ scen4encour * purchase + age + male + country, data =data_last12, method = 'logistic')
+m_scen5_purchaselast12_encour <- polr(scen5supp ~ scen5encour * purchase + age + male + country, data =data_last12, method = 'logistic')
+m_scen6_purchaselast12_encour <- polr(scen6supp ~ scen6encour * purchase + age + male + country, data =data_last12, method = 'logistic')
+
+## approach would restrict freedom
+m_scen1_purchaselast12_free <- polr(scen1supp ~ scen1free * purchase + age + male + country, data =data_last12, method = 'logistic')
+m_scen2_purchaselast12_free <- polr(scen2supp ~ scen2free * purchase + age + male + country, data =data_last12, method = 'logistic')
+m_scen3_purchaselast12_free <- polr(scen3supp ~ scen3free * purchase + age + male + country, data =data_last12, method = 'logistic')
+m_scen4_purchaselast12_free <- polr(scen4supp ~ scen4free * purchase + age + male + country, data =data_last12, method = 'logistic')
+m_scen5_purchaselast12_free <- polr(scen5supp ~ scen5free * purchase + age + male + country, data =data_last12, method = 'logistic')
+m_scen6_purchaselast12_free <- polr(scen6supp ~ scen6free * purchase + age + male + country, data =data_last12, method = 'logistic')
+
+## approach would improve health and wellbeing
+m_scen1_purchaselast12_health <- polr(scen1supp ~ scen1health * purchase + age + male + country, data =data_last12, method = 'logistic')
+m_scen2_purchaselast12_health <- polr(scen2supp ~ scen2health * purchase + age + male + country, data =data_last12, method = 'logistic')
+m_scen3_purchaselast12_health <- polr(scen3supp ~ scen3health * purchase + age + male + country, data =data_last12, method = 'logistic')
+m_scen4_purchaselast12_health <- polr(scen4supp ~ scen4health * purchase + age + male + country, data =data_last12, method = 'logistic')
+m_scen5_purchaselast12_health <- polr(scen5supp ~ scen5health * purchase + age + male + country, data =data_last12, method = 'logistic')
+m_scen6_purchaselast12_health <- polr(scen6supp ~ scen6health * purchase + age + male + country, data =data_last12, method = 'logistic')
+
+## approach would hurt the most vulnerable
+m_scen1_purchaselast12_vulner <- polr(scen1supp ~ scen1vulner * purchase + age + male + country, data =data_last12, method = 'logistic')
+m_scen2_purchaselast12_vulner <- polr(scen2supp ~ scen2vulner * purchase + age + male + country, data =data_last12, method = 'logistic')
+m_scen3_purchaselast12_vulner <- polr(scen3supp ~ scen3vulner * purchase + age + male + country, data =data_last12, method = 'logistic')
+m_scen4_purchaselast12_vulner <- polr(scen4supp ~ scen4vulner * purchase + age + male + country, data =data_last12, method = 'logistic')
+m_scen5_purchaselast12_vulner <- polr(scen5supp ~ scen5vulner * purchase + age + male + country, data =data_last12, method = 'logistic')
+m_scen6_purchaselast12_vulner <- polr(scen6supp ~ scen6vulner * purchase + age + male + country, data =data_last12, method = 'logistic')
+
+## would boost the economy
+m_scen1_purchaselast12_econ <- polr(scen1supp ~ scen1econ * purchase + age + male + country, data =data_last12, method = 'logistic')
+m_scen2_purchaselast12_econ <- polr(scen2supp ~ scen2econ * purchase + age + male + country, data =data_last12, method = 'logistic')
+m_scen3_purchaselast12_econ <- polr(scen3supp ~ scen3econ * purchase + age + male + country, data =data_last12, method = 'logistic')
+m_scen4_purchaselast12_econ <- polr(scen4supp ~ scen4econ * purchase + age + male + country, data =data_last12, method = 'logistic')
+m_scen5_purchaselast12_econ <- polr(scen5supp ~ scen5econ * purchase + age + male + country, data =data_last12, method = 'logistic')
+m_scen6_purchaselast12_econ <- polr(scen6supp ~ scen6econ * purchase + age + male + country, data =data_last12, method = 'logistic')
+
+## would improve trust in govt
+m_scen1_purchaselast12_trust <- polr(scen1supp ~ scen1trust * purchase + age + male + country, data =data_last12, method = 'logistic')
+m_scen2_purchaselast12_trust <- polr(scen2supp ~ scen2trust * purchase + age + male + country, data =data_last12, method = 'logistic')
+m_scen3_purchaselast12_trust <- polr(scen3supp ~ scen3trust * purchase + age + male + country, data =data_last12, method = 'logistic')
+m_scen4_purchaselast12_trust <- polr(scen4supp ~ scen4trust * purchase + age + male + country, data =data_last12, method = 'logistic')
+m_scen5_purchaselast12_trust <- polr(scen5supp ~ scen5trust * purchase + age + male + country, data =data_last12, method = 'logistic')
+m_scen6_purchaselast12_trust <- polr(scen6supp ~ scen6trust * purchase + age + male + country, data =data_last12, method = 'logistic')
+
+models_purchaselast12 <- list(m_scen1_purchaselast12_crime, m_scen2_purchaselast12_crime, m_scen3_purchaselast12_crime, m_scen4_purchaselast12_crime, m_scen5_purchaselast12_crime, m_scen6_purchaselast12_crime,
+                                 m_scen1_purchaselast12_encour, m_scen2_purchaselast12_encour, m_scen3_purchaselast12_encour, m_scen4_purchaselast12_encour, m_scen5_purchaselast12_encour, m_scen6_purchaselast12_encour,
+                                 m_scen1_purchaselast12_free, m_scen2_purchaselast12_free, m_scen3_purchaselast12_free, m_scen4_purchaselast12_free, m_scen5_purchaselast12_free, m_scen6_purchaselast12_free,
+                                 m_scen1_purchaselast12_health, m_scen2_purchaselast12_health, m_scen3_purchaselast12_health, m_scen4_purchaselast12_health, m_scen5_purchaselast12_health, m_scen6_purchaselast12_health,
+                                 m_scen1_purchaselast12_vulner, m_scen2_purchaselast12_vulner, m_scen3_purchaselast12_vulner, m_scen4_purchaselast12_vulner, m_scen5_purchaselast12_vulner, m_scen6_purchaselast12_vulner,
+                                 m_scen1_purchaselast12_econ, m_scen2_purchaselast12_econ, m_scen3_purchaselast12_econ, m_scen4_purchaselast12_econ, m_scen5_purchaselast12_econ, m_scen6_purchaselast12_econ,
+                                 m_scen1_purchaselast12_trust, m_scen2_purchaselast12_trust, m_scen3_purchaselast12_trust, m_scen4_purchaselast12_trust, m_scen5_purchaselast12_trust, m_scen6_purchaselast12_trust)
+
+
+# Apply the function to each model in the list and bind rows
+coefficients_data_purchase <- lapply(models_purchase, extract_coefficients) %>%
+  bind_rows() %>%
+  mutate(mor = "Never purchased drugs",
+         scen = rep(c('Scenario 1', 'Scenario 2', 'Scenario 3', 'Scenario 4', 'Scenario 5', 'Scenario 6'), 7),
+         var = rep(c('crime', 'encour', 'free', 'health', 'vulner', 'econ', 'trust'), each = 6),
+         ci.lower = Coefficient - 1.96 * Std_Error,
+         ci.upper = Coefficient + 1.96 * Std_Error) %>%
+  mutate(significance = case_when(ci.lower > 0 & ci.upper > 0 ~ 'significant',
+                                  ci.lower < 0 & ci.upper < 0 ~ 'significant',
+                                  TRUE ~ 'non significant'))
+
+coefficients_data_purchase_notlast12 <- lapply(models_purchasenotlast12, extract_coefficients) %>%
+  bind_rows() %>%
+  mutate(mor = "Purchased drugs, but not in the last 12 months",
+         scen = rep(c('Scenario 1', 'Scenario 2', 'Scenario 3', 'Scenario 4', 'Scenario 5', 'Scenario 6'), 7),
+         var = rep(c('crime', 'encour', 'free', 'health', 'vulner', 'econ', 'trust'), each = 6),
+         ci.lower = Coefficient - 1.96 * Std_Error,
+         ci.upper = Coefficient + 1.96 * Std_Error) %>%
+  mutate(significance = case_when(ci.lower > 0 & ci.upper > 0 ~ 'significant',
+                                  ci.lower < 0 & ci.upper < 0 ~ 'significant',
+                                  TRUE ~ 'non significant'))
+
+coefficients_data_purchaselast12 <- lapply(models_purchaselast12, extract_coefficients) %>%
+  bind_rows() %>%
+  mutate(mor = "Purchased drugs in the last 12 months",
+         scen = rep(c('Scenario 1', 'Scenario 2', 'Scenario 3', 'Scenario 4', 'Scenario 5', 'Scenario 6'), 7),
+         var = rep(c('crime', 'encour', 'free', 'health', 'vulner', 'econ', 'trust'), each = 6),
+         ci.lower = Coefficient - 1.96 * Std_Error,
+         ci.upper = Coefficient + 1.96 * Std_Error) %>%
+  mutate(significance = case_when(ci.lower > 0 & ci.upper > 0 ~ 'significant',
+                                  ci.lower < 0 & ci.upper < 0 ~ 'significant',
+                                  TRUE ~ 'non significant'))
+
+dataplot_all <-
+  dataplot_immoral %>%
+  mutate(mod = 'morality') %>%
+  bind_rows(coefficients_data_arrest %>% mutate(mod = 'arrest')) %>%
+  bind_rows(coefficients_data_arrest_new %>% mutate(mod = 'arrest')) %>%
+  bind_rows(coefficients_data_purchase %>% mutate(mod = 'purchase')) %>%
+  bind_rows(coefficients_data_purchase_notlast12 %>% mutate(mod = 'purchase')) %>%
+  bind_rows(coefficients_data_purchaselast12 %>% mutate(mod = 'purchase'))
+
+
+
+plot_scen1 <-  
+  ggplot(dataplot_all %>% filter(var == "crime")
+         , aes(y = Coefficient, x = scen, colour = mor, group = mor)) +
+  geom_errorbar(aes(ymin = ci.lower, ymax = ci.upper, alpha = significance), width = .25, position = position_dodge(width = 1), lwd = .5, show.legend = T) + 
+  geom_point(aes(shape = significance, alpha = significance, group = mor), 
+             position = position_dodge(width = 1)) +
+  scale_alpha_manual(values = c(1)) +
+  scale_shape_manual(values = c(8), labels = c("95% confidence interval\ndoes not cross zero")) +
+  geom_hline(yintercept = 0, size = .35, linetype = "dashed", color = 'darkgray') + 
+  facet_wrap(~ mod, labeller = labeller(mod = c(arrest = "Been arrested?",
+                                                morality = "Moral judgements",
+                                                purchase = "Purchased drugs?"))) +
+  coord_flip() + 
+  ggtitle("Relationship between outcome-specific expectations and support for each scenario\nOutcome-specific expectation: 'Approach would reduce crime and\npublic disorder'") + 
+  ylab("") + xlab("") + 
+  guides(colour = guide_legend(title = ""),
+         alpha = "none",
+         shape = guide_legend(title = "", 
+                              override.aes = list(linetype = c(1),
+                                                  shape = c(8),
+                                                  size = c(1)))
+  ) +
+  ylim(-1,4) +
+  theme(plot.title = element_text(hjust = .5, vjust = 2, colour = "#3C3C3C", size = 12)) +
+  theme(axis.text.y = element_text(colour = "#3C3C3C", size = 10),
+        axis.text.x = element_text(colour = "#3C3C3C", size = 8)) + 
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+        panel.background = element_blank(), axis.line = element_line(colour = "#3C3C3C", size = .2),
+        legend.title = element_text(colour = "#3C3C3C", size = 10),
+        legend.key = element_blank(),
+        strip.background = element_blank(),
+        #legend.text = element_text(colour = "#3C3C3C", size = 10),
+        strip.text.x = element_text(size = 12),
+        strip.text = element_text(colour = "#3C3C3C", size = 8),
+        panel.spacing.x=unit(1, "lines"),
+        panel.spacing.y=unit(1, "lines"),
+        plot.caption = element_text(hjust = 0, colour = "#3C3C3C", margin = unit(c(0,0,0,0), "mm"), size = 8),
+        plot.margin = margin(.5, 0, .5, 0, "cm")) + 
+  theme(aspect.ratio = 1) +
+  scale_x_discrete(limits = c('Scenario 1', 'Scenario 2', 'Scenario 3', 'Scenario 4', 'Scenario 5', 'Scenario 6') %>% rev,
+                   breaks = c('Scenario 1', 'Scenario 2', 'Scenario 3', 'Scenario 4', 'Scenario 5', 'Scenario 6') %>% rev) + 
+  scale_color_brewer(palette = "Dark2")
+
+
+plot_scen2 <-  
+  ggplot(dataplot_all %>% filter(var == "encour")
+         , aes(y = Coefficient, x = scen, colour = mor, group = mor)) +
+  geom_errorbar(aes(ymin = ci.lower, ymax = ci.upper, alpha = significance), width = .25, position = position_dodge(width = 1), lwd = .5, show.legend = T) + 
+  geom_point(aes(shape = significance, alpha = significance, group = mor), 
+             position = position_dodge(width = 1)) +
+  scale_alpha_manual(values = c(.3,1)) +
+  scale_shape_manual(values = c(NA,8), labels = c("", "95% confidence interval\ndoes not cross zero")) +
+  geom_hline(yintercept = 0, size = .35, linetype = "dashed", color = 'darkgray') + 
+  facet_wrap(~ mod, labeller = labeller(mod = c(arrest = "Been arrested?",
+                                                morality = "Moral judgements"))) +
+  coord_flip() + 
+  ggtitle("Relationship between outcome-specific expectations and support for each scenario\nOutcome-specific expectation: 'Approach would encourage drug use'") + 
+  ylab("") + xlab("") + 
+  guides(colour = guide_legend(title = ""),
+         alpha = "none",
+         shape = guide_legend(title = "", 
+                              override.aes = list(linetype = c(0,1),
+                                                  shape = c(NA,8),
+                                                  size = c(0,1)))
+  ) +
+  ylim(-2,1) +
+  theme(plot.title = element_text(hjust = .5, vjust = 2, colour = "#3C3C3C", size = 12)) +
+  theme(axis.text.y = element_text(colour = "#3C3C3C", size = 10),
+        axis.text.x = element_text(colour = "#3C3C3C", size = 8)) + 
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+        panel.background = element_blank(), axis.line = element_line(colour = "#3C3C3C", size = .2),
+        legend.title = element_text(colour = "#3C3C3C", size = 10),
+        legend.key = element_blank(),
+        strip.background = element_blank(),
+        #legend.text = element_text(colour = "#3C3C3C", size = 10),
+        strip.text.x = element_text(size = 12),
+        strip.text = element_text(colour = "#3C3C3C", size = 8),
+        panel.spacing.x=unit(1, "lines"),
+        panel.spacing.y=unit(1, "lines"),
+        plot.caption = element_text(hjust = 0, colour = "#3C3C3C", margin = unit(c(0,0,0,0), "mm"), size = 8),
+        plot.margin = margin(.5, 0, .5, 0, "cm")) + 
+  theme(aspect.ratio = 1) +
+  scale_x_discrete(limits = c('Scenario 1', 'Scenario 2', 'Scenario 3', 'Scenario 4', 'Scenario 5', 'Scenario 6') %>% rev,
+                   breaks = c('Scenario 1', 'Scenario 2', 'Scenario 3', 'Scenario 4', 'Scenario 5', 'Scenario 6') %>% rev) + 
+  scale_color_brewer(palette = "Dark2")
+
+plot_scen3 <-  
+  ggplot(dataplot_all %>% filter(var == "free")
+         , aes(y = Coefficient, x = scen, colour = mor, group = mor)) +
+  geom_errorbar(aes(ymin = ci.lower, ymax = ci.upper, alpha = significance), width = .25, position = position_dodge(width = 1), lwd = .5, show.legend = T) + 
+  geom_point(aes(shape = significance, alpha = significance, group = mor), 
+             position = position_dodge(width = 1)) +
+  scale_alpha_manual(values = c(.3,1)) +
+  scale_shape_manual(values = c(NA,8), labels = c("", "95% confidence interval\ndoes not cross zero")) +
+  geom_hline(yintercept = 0, size = .35, linetype = "dashed", color = 'darkgray') + 
+  facet_wrap(~ mod, labeller = labeller(mod = c(arrest = "Been arrested?",
+                                                morality = "Moral judgements"))) +
+  coord_flip() + 
+  ggtitle("Relationship between outcome-specific expectations and support for each scenario\nOutcome-specific expectation: 'Approach would restrict people's freedom'") + 
+  ylab("") + xlab("") + 
+  guides(colour = guide_legend(title = ""),
+         alpha = "none",
+         shape = guide_legend(title = "", 
+                              override.aes = list(linetype = c(0,1),
+                                                  shape = c(NA,8),
+                                                  size = c(0,1)))
+  ) +
+  ylim(-3,1) +
+  theme(plot.title = element_text(hjust = .5, vjust = 2, colour = "#3C3C3C", size = 12)) +
+  theme(axis.text.y = element_text(colour = "#3C3C3C", size = 10),
+        axis.text.x = element_text(colour = "#3C3C3C", size = 8)) + 
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+        panel.background = element_blank(), axis.line = element_line(colour = "#3C3C3C", size = .2),
+        legend.title = element_text(colour = "#3C3C3C", size = 10),
+        legend.key = element_blank(),
+        strip.background = element_blank(),
+        #legend.text = element_text(colour = "#3C3C3C", size = 10),
+        strip.text.x = element_text(size = 12),
+        strip.text = element_text(colour = "#3C3C3C", size = 8),
+        panel.spacing.x=unit(1, "lines"),
+        panel.spacing.y=unit(1, "lines"),
+        plot.caption = element_text(hjust = 0, colour = "#3C3C3C", margin = unit(c(0,0,0,0), "mm"), size = 8),
+        plot.margin = margin(.5, 0, .5, 0, "cm")) + 
+  theme(aspect.ratio = 1) +
+  scale_x_discrete(limits = c('Scenario 1', 'Scenario 2', 'Scenario 3', 'Scenario 4', 'Scenario 5', 'Scenario 6') %>% rev,
+                   breaks = c('Scenario 1', 'Scenario 2', 'Scenario 3', 'Scenario 4', 'Scenario 5', 'Scenario 6') %>% rev) + 
+  scale_color_brewer(palette = "Dark2")
+
+
+plot_scen4 <-  
+  ggplot(dataplot_all %>% filter(var == "health")
+         , aes(y = Coefficient, x = scen, colour = mor, group = mor)) +
+  geom_errorbar(aes(ymin = ci.lower, ymax = ci.upper, alpha = significance), width = .25, position = position_dodge(width = 1), lwd = .5, show.legend = T) + 
+  geom_point(aes(shape = significance, alpha = significance, group = mor), 
+             position = position_dodge(width = 1)) +
+  scale_alpha_manual(values = c(1)) +
+  scale_shape_manual(values = c(8), labels = c("95% confidence interval\ndoes not cross zero")) +
+  geom_hline(yintercept = 0, size = .35, linetype = "dashed", color = 'darkgray') + 
+  facet_wrap(~ mod, labeller = labeller(mod = c(arrest = "Been arrested?",
+                                                morality = "Moral judgements"))) +
+  coord_flip() + 
+  ggtitle("Relationship between outcome-specific expectations and support for each scenario\nOutcome-specific expectation: 'Approach would improve overall health and wellbeing'") + 
+  ylab("") + xlab("") + 
+  guides(colour = guide_legend(title = ""),
+         alpha = "none",
+         shape = guide_legend(title = "", 
+                              override.aes = list(linetype = c(1),
+                                                  shape = c(8),
+                                                  size = c(1)))
+  ) +
+  ylim(-1,4) +
+  theme(plot.title = element_text(hjust = .5, vjust = 2, colour = "#3C3C3C", size = 12)) +
+  theme(axis.text.y = element_text(colour = "#3C3C3C", size = 10),
+        axis.text.x = element_text(colour = "#3C3C3C", size = 8)) + 
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+        panel.background = element_blank(), axis.line = element_line(colour = "#3C3C3C", size = .2),
+        legend.title = element_text(colour = "#3C3C3C", size = 10),
+        legend.key = element_blank(),
+        strip.background = element_blank(),
+        #legend.text = element_text(colour = "#3C3C3C", size = 10),
+        strip.text.x = element_text(size = 12),
+        strip.text = element_text(colour = "#3C3C3C", size = 8),
+        panel.spacing.x=unit(1, "lines"),
+        panel.spacing.y=unit(1, "lines"),
+        plot.caption = element_text(hjust = 0, colour = "#3C3C3C", margin = unit(c(0,0,0,0), "mm"), size = 8),
+        plot.margin = margin(.5, 0, .5, 0, "cm")) + 
+  theme(aspect.ratio = 1) +
+  scale_x_discrete(limits = c('Scenario 1', 'Scenario 2', 'Scenario 3', 'Scenario 4', 'Scenario 5', 'Scenario 6') %>% rev,
+                   breaks = c('Scenario 1', 'Scenario 2', 'Scenario 3', 'Scenario 4', 'Scenario 5', 'Scenario 6') %>% rev) + 
+  scale_color_brewer(palette = "Dark2")
+
+
+plot_scen5 <-  
+  ggplot(dataplot_all %>% filter(var == "vulner")
+         , aes(y = Coefficient, x = scen, colour = mor, group = mor)) +
+  geom_errorbar(aes(ymin = ci.lower, ymax = ci.upper, alpha = significance), width = .25, position = position_dodge(width = 1), lwd = .5, show.legend = T) + 
+  geom_point(aes(shape = significance, alpha = significance, group = mor), 
+             position = position_dodge(width = 1)) +
+  scale_alpha_manual(values = c(1)) +
+  scale_shape_manual(values = c(8), labels = c("95% confidence interval\ndoes not cross zero")) +
+  geom_hline(yintercept = 0, size = .35, linetype = "dashed", color = 'darkgray') + 
+  facet_wrap(~ mod, labeller = labeller(mod = c(arrest = "Been arrested?",
+                                                morality = "Moral judgements"))) +
+  coord_flip() + 
+  ggtitle("Relationship between outcome-specific expectations and support for each scenario\nOutcome-specific expectation: 'Approach would hurt the most vulerable people'") + 
+  ylab("") + xlab("") + 
+  guides(colour = guide_legend(title = ""),
+         alpha = "none",
+         shape = guide_legend(title = "", 
+                              override.aes = list(linetype = c(1),
+                                                  shape = c(8),
+                                                  size = c(1)))
+  ) +
+  ylim(-3,1) +
+  theme(plot.title = element_text(hjust = .5, vjust = 2, colour = "#3C3C3C", size = 12)) +
+  theme(axis.text.y = element_text(colour = "#3C3C3C", size = 10),
+        axis.text.x = element_text(colour = "#3C3C3C", size = 8)) + 
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+        panel.background = element_blank(), axis.line = element_line(colour = "#3C3C3C", size = .2),
+        legend.title = element_text(colour = "#3C3C3C", size = 10),
+        legend.key = element_blank(),
+        strip.background = element_blank(),
+        #legend.text = element_text(colour = "#3C3C3C", size = 10),
+        strip.text.x = element_text(size = 12),
+        strip.text = element_text(colour = "#3C3C3C", size = 8),
+        panel.spacing.x=unit(1, "lines"),
+        panel.spacing.y=unit(1, "lines"),
+        plot.caption = element_text(hjust = 0, colour = "#3C3C3C", margin = unit(c(0,0,0,0), "mm"), size = 8),
+        plot.margin = margin(.5, 0, .5, 0, "cm")) + 
+  theme(aspect.ratio = 1) +
+  scale_x_discrete(limits = c('Scenario 1', 'Scenario 2', 'Scenario 3', 'Scenario 4', 'Scenario 5', 'Scenario 6') %>% rev,
+                   breaks = c('Scenario 1', 'Scenario 2', 'Scenario 3', 'Scenario 4', 'Scenario 5', 'Scenario 6') %>% rev) + 
+  scale_color_brewer(palette = "Dark2")
+
+
+plot_scen6 <-  
+  ggplot(dataplot_all %>% filter(var == "econ")
+         , aes(y = Coefficient, x = scen, colour = mor, group = mor)) +
+  geom_errorbar(aes(ymin = ci.lower, ymax = ci.upper, alpha = significance), width = .25, position = position_dodge(width = 1), lwd = .5, show.legend = T) + 
+  geom_point(aes(shape = significance, alpha = significance, group = mor), 
+             position = position_dodge(width = 1)) +
+  scale_alpha_manual(values = c(1)) +
+  scale_shape_manual(values = c(8), labels = c("95% confidence interval\ndoes not cross zero")) +
+  geom_hline(yintercept = 0, size = .35, linetype = "dashed", color = 'darkgray') + 
+  facet_wrap(~ mod, labeller = labeller(mod = c(arrest = "Been arrested?",
+                                                morality = "Moral judgements"))) +
+  coord_flip() + 
+  ggtitle("Relationship between outcome-specific expectations and support for each scenario\nOutcome-specific expectation: 'Approach would boost the economy'") + 
+  ylab("") + xlab("") + 
+  guides(colour = guide_legend(title = ""),
+         alpha = "none",
+         shape = guide_legend(title = "", 
+                              override.aes = list(linetype = c(1),
+                                                  shape = c(8),
+                                                  size = c(1)))
+  ) +
+  ylim(-1,2.5) +
+  theme(plot.title = element_text(hjust = .5, vjust = 2, colour = "#3C3C3C", size = 12)) +
+  theme(axis.text.y = element_text(colour = "#3C3C3C", size = 10),
+        axis.text.x = element_text(colour = "#3C3C3C", size = 8)) + 
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+        panel.background = element_blank(), axis.line = element_line(colour = "#3C3C3C", size = .2),
+        legend.title = element_text(colour = "#3C3C3C", size = 10),
+        legend.key = element_blank(),
+        strip.background = element_blank(),
+        #legend.text = element_text(colour = "#3C3C3C", size = 10),
+        strip.text.x = element_text(size = 12),
+        strip.text = element_text(colour = "#3C3C3C", size = 8),
+        panel.spacing.x=unit(1, "lines"),
+        panel.spacing.y=unit(1, "lines"),
+        plot.caption = element_text(hjust = 0, colour = "#3C3C3C", margin = unit(c(0,0,0,0), "mm"), size = 8),
+        plot.margin = margin(.5, 0, .5, 0, "cm")) + 
+  theme(aspect.ratio = 1) +
+  scale_x_discrete(limits = c('Scenario 1', 'Scenario 2', 'Scenario 3', 'Scenario 4', 'Scenario 5', 'Scenario 6') %>% rev,
+                   breaks = c('Scenario 1', 'Scenario 2', 'Scenario 3', 'Scenario 4', 'Scenario 5', 'Scenario 6') %>% rev) + 
+  scale_color_brewer(palette = "Dark2")
+
+
+plot_scen7 <-  
+  ggplot(dataplot_all %>% filter(var == "trust")
+         , aes(y = Coefficient, x = scen, colour = mor, group = mor)) +
+  geom_errorbar(aes(ymin = ci.lower, ymax = ci.upper, alpha = significance), width = .25, position = position_dodge(width = 1), lwd = .5, show.legend = T) + 
+  geom_point(aes(shape = significance, alpha = significance, group = mor), 
+             position = position_dodge(width = 1)) +
+  scale_alpha_manual(values = c(1)) +
+  scale_shape_manual(values = c(8), labels = c("95% confidence interval\ndoes not cross zero")) +
+  geom_hline(yintercept = 0, size = .35, linetype = "dashed", color = 'darkgray') + 
+  facet_wrap(~ mod, labeller = labeller(mod = c(arrest = "Been arrested?",
+                                                morality = "Moral judgements"))) +
+  coord_flip() + 
+  ggtitle("Relationship between outcome-specific expectations and support for each scenario\nOutcome-specific expectation: 'Approach would improve trust in government'") + 
+  ylab("") + xlab("") + 
+  guides(colour = guide_legend(title = ""),
+         alpha = "none",
+         shape = guide_legend(title = "", 
+                              override.aes = list(linetype = c(1),
+                                                  shape = c(8),
+                                                  size = c(1)))
+  ) +
+  ylim(-1,3) +
+  theme(plot.title = element_text(hjust = .5, vjust = 2, colour = "#3C3C3C", size = 12)) +
+  theme(axis.text.y = element_text(colour = "#3C3C3C", size = 10),
+        axis.text.x = element_text(colour = "#3C3C3C", size = 8)) + 
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+        panel.background = element_blank(), axis.line = element_line(colour = "#3C3C3C", size = .2),
+        legend.title = element_text(colour = "#3C3C3C", size = 10),
+        legend.key = element_blank(),
+        strip.background = element_blank(),
+        #legend.text = element_text(colour = "#3C3C3C", size = 10),
+        strip.text.x = element_text(size = 12),
+        strip.text = element_text(colour = "#3C3C3C", size = 8),
+        panel.spacing.x=unit(1, "lines"),
+        panel.spacing.y=unit(1, "lines"),
+        plot.caption = element_text(hjust = 0, colour = "#3C3C3C", margin = unit(c(0,0,0,0), "mm"), size = 8),
+        plot.margin = margin(.5, 0, .5, 0, "cm")) + 
+  theme(aspect.ratio = 1) +
+  scale_x_discrete(limits = c('Scenario 1', 'Scenario 2', 'Scenario 3', 'Scenario 4', 'Scenario 5', 'Scenario 6') %>% rev,
+                   breaks = c('Scenario 1', 'Scenario 2', 'Scenario 3', 'Scenario 4', 'Scenario 5', 'Scenario 6') %>% rev) + 
+  scale_color_brewer(palette = "Dark2")
+
+
+pdf("plots/1_plot_reducecrime.pdf", width = 10, height = 12, paper = 'a4r')
+plot_scen1
+dev.off()
+
+pdf("plots/2_plot_encouragedrug.pdf", width = 10, height = 12, paper = 'a4r')
+plot_scen2
+dev.off()
+
+pdf("plots/3_plot_restrictfreedom.pdf", width = 10, height = 12, paper = 'a4r')
+plot_scen3
+dev.off()
+
+pdf("plots/4_plot_improvehealth.pdf", width = 10, height = 12, paper = 'a4r')
+plot_scen4
+dev.off()
+
+pdf("plots/5_plot_hurtvulnerable.pdf", width = 10, height = 12, paper = 'a4r')
+plot_scen5
+dev.off()
+
+pdf("plots/6_plot_boosteconomy.pdf", width = 10, height = 12, paper = 'a4r')
+plot_scen6
+dev.off()
+
+pdf("plots/7_plot_improvetrust.pdf", width = 10, height = 12, paper = 'a4r')
+plot_scen7
+dev.off()
+
+
+
+
+
+plot_items_immoral <-  
+  ggplot(dataplot_immoral
+         , aes(y = Coefficient, x = scen, colour = mor, group = mor)) +
+  geom_errorbar(aes(ymin = ci.lower, ymax = ci.upper, alpha = significance), width = .25, position = position_dodge(width = 1), lwd = .5, show.legend = T) + 
+  geom_point(aes(shape = significance, alpha = significance, group = mor), 
+             size = ifelse(dataplot_immoral$significance == "significant", 1, 0), 
+             position = position_dodge(width = 1)) +
+  scale_alpha_manual(values = c(.3, 1)) +
+  scale_shape_manual(values = c(NA,8), labels = c("", "95% confidence interval\ndoes not cross zero")) +
+  geom_hline(yintercept = 0, size = .35, linetype = "dashed", color = 'darkgray') + 
+  facet_wrap(~ var, labeller = labeller(var = c(crime = 'Reduce crime and\npublic disorder', 
+                                                encour = 'Encourage drug\nuse',
+                                                free = "Restrict people's\nfreedom",
+                                                health = "Improve overall\nhealth and wellbeing",
+                                                vulner = "Hurt the most\nvulnerable people",
+                                                econ = "Boost the economy",
+                                                trust = "Improve trust\nin government"))) +
+  coord_flip() + 
+  ggtitle("Effects on support for each policy scenario") + 
+  ylab("") + xlab("") + 
+  guides(colour = guide_legend(title = ""),
+         alpha = "none",
+         shape = guide_legend(title = "", 
+                               override.aes = list(linetype = c(0,1),
+                                                   shape = c(NA,8),
+                                                   size = c(0,1)))
+  ) +
+  theme(plot.title = element_text(hjust = .5, vjust = 2, colour = "#3C3C3C", size = 12)) +
+  theme(axis.text.y = element_text(colour = "#3C3C3C", size = 10),
+        axis.text.x = element_text(colour = "#3C3C3C", size = 8)) + 
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+        panel.background = element_blank(), axis.line = element_line(colour = "#3C3C3C", size = .2),
+        legend.title = element_text(colour = "#3C3C3C", size = 10),
+        legend.key = element_blank(),
+        strip.background = element_blank(),
+        #legend.text = element_text(colour = "#3C3C3C", size = 10),
+        strip.text.x = element_text(size = 12),
+        strip.text = element_text(colour = "#3C3C3C", size = 8),
+        panel.spacing.x=unit(1, "lines"),
+        panel.spacing.y=unit(1, "lines"),
+        plot.caption = element_text(hjust = 0, colour = "#3C3C3C", margin = unit(c(0,0,0,0), "mm"), size = 8),
+        plot.margin = margin(.5, 0, .5, 0, "cm")) + 
+  theme(aspect.ratio = 1) +
+  scale_x_discrete(limits = c('Scenario 1', 'Scenario 2', 'Scenario 3', 'Scenario 4', 'Scenario 5', 'Scenario 6') %>% rev,
+                   breaks = c('Scenario 1', 'Scenario 2', 'Scenario 3', 'Scenario 4', 'Scenario 5', 'Scenario 6') %>% rev) + 
+  scale_color_brewer(palette = "Dark2")
+
+pdf("plots/support_by_surveyitems_IMMORAL.pdf", width = 10, height = 12, paper = 'a4r')
+plot_items_immoral
+dev.off()
+
+
+###############################################################
+## effects on "would reduce crime"
+
+m_crime_scen1 <- polr(scen1crime ~ scen1_support, data = data, method = 'logistic')
+m_crime_scen2 <- polr(scen2crime ~ scen2_support, data = data, method = 'logistic')
+m_crime_scen3 <- polr(scen3crime ~ scen3_support, data = data, method = 'logistic')
+m_crime_scen4 <- polr(scen4crime ~ scen4_support, data = data, method = 'logistic')
+m_crime_scen5 <- polr(scen5crime ~ scen5_support, data = data, method = 'logistic')
+m_crime_scen6 <- polr(scen6crime ~ scen6_support, data = data, method = 'logistic')
+
+m_crime_scen1X <- polr(scen1crime ~ scen1_support * scen1_immoral, data = data, method = 'logistic')
+m_crime_scen2X <- polr(scen2crime ~ scen2_support * scen2_immoral, data = data, method = 'logistic')
+m_crime_scen3X <- polr(scen3crime ~ scen3_support * scen3_immoral, data = data, method = 'logistic')
+m_crime_scen4X <- polr(scen4crime ~ scen4_support * scen4_immoral, data = data, method = 'logistic')
+m_crime_scen5X <- polr(scen5crime ~ scen5_support * scen5_immoral, data = data, method = 'logistic')
+m_crime_scen6X <- polr(scen6crime ~ scen6_support * scen6_immoral, data = data, method = 'logistic')
+
+m_crime_scen1X_imm <- polr(scen1crime ~ scen1_support * scen1_immoral, data = data %>% mutate(scen1_immoral = factor(scen1_immoral, levels = c('TRUE', 'FALSE'))), method = 'logistic')
+m_crime_scen2X_imm <- polr(scen1crime ~ scen2_support * scen1_immoral, data = data %>% mutate(scen2_immoral = factor(scen2_immoral, levels = c('TRUE', 'FALSE'))), method = 'logistic')
+m_crime_scen3X_imm <- polr(scen1crime ~ scen3_support * scen1_immoral, data = data %>% mutate(scen3_immoral = factor(scen3_immoral, levels = c('TRUE', 'FALSE'))), method = 'logistic')
+m_crime_scen4X_imm <- polr(scen1crime ~ scen4_support * scen1_immoral, data = data %>% mutate(scen4_immoral = factor(scen4_immoral, levels = c('TRUE', 'FALSE'))), method = 'logistic')
+m_crime_scen5X_imm <- polr(scen1crime ~ scen5_support * scen1_immoral, data = data %>% mutate(scen5_immoral = factor(scen5_immoral, levels = c('TRUE', 'FALSE'))), method = 'logistic')
+m_crime_scen6X_imm <- polr(scen1crime ~ scen6_support * scen1_immoral, data = data %>% mutate(scen6_immoral = factor(scen6_immoral, levels = c('TRUE', 'FALSE'))), method = 'logistic')
+
+screenreg(list(m_crime_scen1, m_crime_scen2, m_crime_scen3, m_crime_scen4, m_crime_scen5, m_crime_scen6))
+screenreg(list(m_crime_scen1X, m_crime_scen2X, m_crime_scen3X, m_crime_scen4X, m_crime_scen5X, m_crime_scen6X))
+
+dataplot_crime <-
+  summary(m_crime_scen1)$coefficients %>%
+  as.data.frame() %>%
+  rownames_to_column() %>%
+  filter(rowname == "scen1_supportTRUE") %>%
+  mutate(var = 'Crime reduction', scen = 'Scenario 1',
+         group = 'All') %>%
+  bind_rows(
+    summary(m_crime_scen1X)$coefficients %>%
+      as.data.frame() %>%
+      rownames_to_column() %>%
+      filter(rowname == "scen1_supportTRUE") %>%
+      mutate(var = 'Crime reduction', scen = 'Scenario 1',
+             group = "Moral")
+  ) %>%
+  bind_rows(
+    summary(m_crime_scen1X_imm)$coefficients %>%
+      as.data.frame() %>%
+      rownames_to_column() %>%
+      filter(rowname == "scen1_supportTRUE") %>%
+      mutate(var = 'Crime reduction', scen = 'Scenario 1',
+             group = "Immoral")
+  ) %>%
+  bind_rows(
+    summary(m_crime_scen2)$coefficients %>%
+      as.data.frame() %>%
+      rownames_to_column() %>%
+      filter(rowname == "scen2_supportTRUE") %>%
+      mutate(var = 'Crime reduction', scen = 'Scenario 2',
+             group = 'All')
+  ) %>%
+  bind_rows(
+    summary(m_crime_scen2X)$coefficients %>%
+      as.data.frame() %>%
+      rownames_to_column() %>%
+      filter(rowname == "scen2_supportTRUE") %>%
+      mutate(var = 'Crime reduction', scen = 'Scenario 2',
+             group = "Moral")
+  ) %>%
+  bind_rows(
+    summary(m_crime_scen2X_imm)$coefficients %>%
+      as.data.frame() %>%
+      rownames_to_column() %>%
+      filter(rowname == "scen2_supportTRUE") %>%
+      mutate(var = 'Crime reduction', scen = 'Scenario 2',
+             group = "Immoral")
+  ) %>%
+  bind_rows(
+    summary(m_crime_scen3)$coefficients %>%
+      as.data.frame() %>%
+      rownames_to_column() %>%
+      filter(rowname == "scen3_supportTRUE") %>%
+      mutate(var = 'Crime reduction', scen = 'Scenario 3',
+             group = 'All')
+  ) %>%
+  bind_rows(
+    summary(m_crime_scen3X)$coefficients %>%
+      as.data.frame() %>%
+      rownames_to_column() %>%
+      filter(rowname == "scen3_supportTRUE") %>%
+      mutate(var = 'Crime reduction', scen = 'Scenario 3',
+             group = "Moral")
+  ) %>%
+  bind_rows(
+    summary(m_crime_scen3X_imm)$coefficients %>%
+      as.data.frame() %>%
+      rownames_to_column() %>%
+      filter(rowname == "scen3_supportTRUE") %>%
+      mutate(var = 'Crime reduction', scen = 'Scenario 3',
+             group = "Immoral")
+  ) %>%
+  bind_rows(
+    summary(m_crime_scen4)$coefficients %>%
+      as.data.frame() %>%
+      rownames_to_column() %>%
+      filter(rowname == "scen4_supportTRUE") %>%
+      mutate(var = 'Crime reduction', scen = 'Scenario 4',
+             group = 'All')
+  ) %>%
+  bind_rows(
+    summary(m_crime_scen4X)$coefficients %>%
+      as.data.frame() %>%
+      rownames_to_column() %>%
+      filter(rowname == "scen4_supportTRUE") %>%
+      mutate(var = 'Crime reduction', scen = 'Scenario 4',
+             group = "Moral")
+  ) %>%
+  bind_rows(
+    summary(m_crime_scen4X_imm)$coefficients %>%
+      as.data.frame() %>%
+      rownames_to_column() %>%
+      filter(rowname == "scen4_supportTRUE") %>%
+      mutate(var = 'Crime reduction', scen = 'Scenario 4',
+             group = "Immoral")
+  ) %>%
+  bind_rows(
+    summary(m_crime_scen5)$coefficients %>%
+      as.data.frame() %>%
+      rownames_to_column() %>%
+      filter(rowname == "scen5_supportTRUE") %>%
+      mutate(var = 'Crime reduction', scen = 'Scenario 5',
+             group = 'All')
+  ) %>%
+  bind_rows(
+    summary(m_crime_scen5X)$coefficients %>%
+      as.data.frame() %>%
+      rownames_to_column() %>%
+      filter(rowname == "scen5_supportTRUE") %>%
+      mutate(var = 'Crime reduction', scen = 'Scenario 5',
+             group = "Moral")
+  ) %>%
+  bind_rows(
+    summary(m_crime_scen5X_imm)$coefficients %>%
+      as.data.frame() %>%
+      rownames_to_column() %>%
+      filter(rowname == "scen5_supportTRUE") %>%
+      mutate(var = 'Crime reduction', scen = 'Scenario 5',
+             group = "Immoral")
+  ) %>%
+  bind_rows(
+    summary(m_crime_scen6)$coefficients %>%
+      as.data.frame() %>%
+      rownames_to_column() %>%
+      filter(rowname == "scen6_supportTRUE") %>%
+      mutate(var = 'Crime reduction', scen = 'Scenario 6',
+             group = 'All')
+  ) %>%
+  bind_rows(
+    summary(m_crime_scen6X)$coefficients %>%
+      as.data.frame() %>%
+      rownames_to_column() %>%
+      filter(rowname == "scen6_supportTRUE") %>%
+      mutate(var = 'Crime reduction', scen = 'Scenario 6',
+             group = "Moral")
+  ) %>%
+  bind_rows(
+    summary(m_crime_scen6X_imm)$coefficients %>%
+      as.data.frame() %>%
+      rownames_to_column() %>%
+      filter(rowname == "scen6_supportTRUE") %>%
+      mutate(var = 'Crime reduction', scen = 'Scenario 6',
+             group = "Immoral")
+  ) %>%
+  mutate(ci.lower = Value - 1.96 * `Std. Error`,
+         ci.upper = Value + 1.96 * `Std. Error`,
+         scen = factor(scen, levels = c("Scenario 1", "Scenario 2", "Scenario 3", "Scenario 4", "Scenario 5", "Scenario 6")),
+         group = factor(group, levels = c("Immoral", "All", "Moral"))) %>%
+  mutate(significance = case_when(ci.lower > 0 & ci.upper > 0 ~ 'significant',
+                                  ci.lower < 0 & ci.upper < 0 ~ 'significant',
+                                  TRUE ~ 'non significant'))
+
+crime_plot <-  
+  ggplot(dataplot_crime, aes(y = Value, x = var, colour = group, group = group)) +
+  geom_errorbar(aes(ymin = ci.lower, ymax = ci.upper, alpha = significance), width = .15, position = position_dodge(width = .75), lwd = .5, show.legend = T) + 
+  geom_point(aes(shape = significance, alpha = significance, group = group), 
+             size = ifelse(dataplot_crime$significance == "significant", 3, 0), 
+             position = position_dodge(width = .75)) +
+  scale_alpha_manual(values = c(1)) +
+  scale_shape_manual(values = c(8), labels = c("95% confidence interval\ndoes not cross zero")) +
+  geom_hline(yintercept = 0, size = .35, linetype = "dashed", color = 'darkgray') + 
+  facet_wrap(~ scen) +
+  coord_flip() + 
+  ggtitle("Effects on beliefs about crime reduction") + 
+  ylab("") + xlab("") + 
+  guides(colour = guide_legend(title = ""),
+         alpha = "none",
+         shape = guide_legend(title = "", 
+                              override.aes = list(linetype = c(1),
+                                                  shape = c(8),
+                                                  size = c(1)))) +
+  theme(plot.title = element_text(hjust = .5, vjust = 2, colour = "#3C3C3C", size = 12)) +
+  theme(axis.text.y = element_text(colour = "#3C3C3C", size = 10),
+        axis.text.x = element_text(colour = "#3C3C3C", size = 8)) + 
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+        panel.background = element_blank(), axis.line = element_line(colour = "#3C3C3C", size = .2),
+        legend.title = element_text(colour = "#3C3C3C", size = 10),
+        legend.key = element_blank(),
+        strip.background = element_blank(),
+        #legend.text = element_text(colour = "#3C3C3C", size = 10),
+        strip.text.x = element_text(size = 12),
+        strip.text = element_text(colour = "#3C3C3C", size = 10),
+        panel.spacing.x=unit(1, "lines"),
+        panel.spacing.y=unit(1, "lines"),
+        plot.caption = element_text(hjust = 0, colour = "#3C3C3C", margin = unit(c(0,0,0,0), "mm"), size = 8),
+        plot.margin = margin(.5, 0, .5, 0, "cm")) + 
+  theme(aspect.ratio = 2.5) + 
+  scale_color_brewer(palette = "Dark2",
+                     breaks = c("Moral", "All", "Immoral"))
+
+crime_plot
+
+pdf("plots/crimereduction.pdf", width = 10, height = 10, paper = 'a4r')
+crime_plot
+dev.off()
